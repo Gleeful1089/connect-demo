@@ -18,7 +18,12 @@ def _load_dotenv(path):
 
 
 _load_dotenv(ROOT / ".env")
-DB_PATH = Path(os.environ.get("CONNECT_DB", ROOT / "connect.db"))
+DB_PATH = Path(os.environ.get("CONNECT_DB", ROOT / "connect.db"))   # used by scripts and tests; the web app uses sandboxes
+
+# Per-visitor sandboxes: one SQLite file per browser, created on first visit from the recorded fixtures.
+SANDBOX_DIR = Path(os.environ.get("CONNECT_SANDBOX_DIR", ROOT / "sandboxes"))
+MAX_SANDBOXES = int(os.environ.get("CONNECT_MAX_SANDBOXES", "300"))
+SANDBOX_TTL_DAYS = int(os.environ.get("CONNECT_SANDBOX_TTL_DAYS", "7"))
 FIXTURE_PATH = ROOT / "fixtures" / "calls.json"
 SIM_FIXTURE_PATH = ROOT / "tests" / "data" / "simulated_calls.json"   # simulated outputs, used by tests
 

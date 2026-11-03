@@ -43,6 +43,7 @@
   <h1>Connect: onboarding workbench</h1>
   <span class="banner">Synthetic data. Demo only.</span>
   <span id="simflag"></span>
+  <span id="sandbox"></span>
   <nav><button id="t1" class="on" onclick="showTab(1)">Workbench</button><button id="t2" onclick="showTab(2)">Evaluation (design view)</button></nav>
 </header>
 <div id="toast" class="card err" hidden style="position:fixed;right:16px;bottom:16px;z-index:9;max-width:420px"></div>
@@ -54,7 +55,7 @@
       <input id="thr" type="range" min="0" max="1" step="0.05" style="width:220px" oninput="thrLabel.textContent=(+this.value).toFixed(2)" onchange="setThr(this.value)">
       <span id="thrLabel" class="pill"></span>
       <span id="counts" class="mute"></span>
-      <button class="alt" onclick="rebuild()">Rebuild from synthetic files</button>
+      <button class="alt" onclick="rebuild()" title="Resets your personal sandbox only">Reset my sandbox</button>
     </div>
     <div class="small mute" style="margin-top:6px">Mappings at or above the threshold are auto-confirmed. The rest go to the review queue. Anomaly detection below is statistical and rule based, with no model involved. A model only classifies what the rules found.</div>
   </section>

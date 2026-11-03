@@ -22,3 +22,14 @@ Offline by default: every model call has a cached fixture. With no ANTHROPIC_API
 - `llm.py` the single model entry point with the fixture fallback
 
 See BUILD_LOG.md for what went wrong and QUESTIONS.md for assumptions.
+
+## Hosting (Railway)
+No logins. Each browser gets a random cookie and its own sandbox database, built on the first visit from the recorded
+fixtures (no model calls, no API key needed). Reset my sandbox rebuilds only that visitor's copy. Sandboxes live on the
+container's disk: they are removed after 7 days of inactivity, evicted oldest-first beyond 300, and lost on redeploy
+(visitors then silently get a fresh one).
+
+Environment variables for the host: `CONNECT_LLM=offline` (guarantees no API calls even if a key is present).
+Optional: `CONNECT_MAX_SANDBOXES`, `CONNECT_SANDBOX_TTL_DAYS`, `CONNECT_SANDBOX_DIR`. Do not set `ANTHROPIC_API_KEY`.
+Start command: `uvicorn api.main:app --host 0.0.0.0 --port $PORT` (see railway.toml). Single worker only: the per-visitor
+locks are in-process.

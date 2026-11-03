@@ -12,8 +12,8 @@ from mapping import mapper
 from triage import classify, queue
 
 
-def run(threshold: float | None = None):
-    conn = db.reset()
+def run(threshold: float | None = None, path=None):
+    conn = db.reset(path)
     if threshold is None:
         threshold = config.CONFIDENCE_THRESHOLD
     db.set_setting(conn, "threshold", threshold)

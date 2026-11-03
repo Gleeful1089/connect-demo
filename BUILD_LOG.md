@@ -100,3 +100,11 @@ unless an entry says otherwise, because no ANTHROPIC_API_KEY was available durin
 - **How detected:** you noticed it in the browser. My Node smoke checks only looked for crashes, not for color logic.
 - **Correction:** the badge now compares against the slider's threshold. Verified under Node at 0.90: both 0.85 tiles
   render amber. There is still no automated test of UI color logic.
+
+## 12. New sandbox tests hardcoded the real-fixture queue size (same mistake as item 7)
+- **What was wrong:** four of the first sandbox tests asserted a queue of exactly 28 items. Tests run on the simulated
+  fixtures, which give 12, so they failed. Item 7 was the same coupling and I repeated it.
+- **How detected:** the first pytest run of the new file.
+- **Correction:** counts are now relative to a fresh sandbox (`baseline()`). One more failure was a test-client quirk
+  (a second cookie with the same name), fixed by sending the forged cookie as a raw header. I also changed
+  `new_sid` to a constant to confirm the isolation tests fail when sandboxes are shared: 5 failed, then I restored it.

@@ -34,8 +34,9 @@ CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT);
 """
 
 
-def connect() -> sqlite3.Connection:
-    conn = sqlite3.connect(config.DB_PATH, check_same_thread=False)
+def connect(path=None) -> sqlite3.Connection:
+    path = path or config.DB_PATH
+    conn = sqlite3.connect(path, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.executescript(SCHEMA)
     if "suppressed_reason" not in {r[1] for r in conn.execute("PRAGMA table_info(records)")}:
@@ -44,10 +45,14 @@ def connect() -> sqlite3.Connection:
     return conn
 
 
-def reset() -> sqlite3.Connection:
-    if config.DB_PATH.exists():
-        config.DB_PATH.unlink()
-    conn = connect()
+def reset(path=None) -> sqlite3.Connection:
+    path = path or config.DB_PATH
+    path.parent.mkdir(parents=True, exist_ok=True)
+    for suffix in ("", "-wal", "-shm", "-journal"):
+        f = path.with_name(path.name + suffix)
+        if f.exists():
+            f.unlink()
+    conn = connect(path)
     for name, desc in ontology.TAXONOMY.items():
         conn.execute("INSERT INTO taxonomy VALUES(?,?,?,?)", (name, desc, "approved", "seed"))
     conn.commit()

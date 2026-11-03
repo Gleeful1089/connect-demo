@@ -32,6 +32,7 @@ async function loadAll() {
   $('simflag').innerHTML = meta.simulated
     ? '<span class="sim" title="No ANTHROPIC_API_KEY. Model outputs come from a keyword heuristic, not a language model.">Simulated model outputs (offline fixtures)</span>'
     : `<span class="sim">${esc(meta.llm_mode)} model</span>`;
+  if (meta.sandbox) $('sandbox').innerHTML = `<span class="pill" title="Your own copy of the data. Nothing you do here is visible to other users, and it is removed after ${meta.sandbox.ttl_days} days of inactivity.">Personal sandbox ${esc(meta.sandbox.id)}</span>`;
   $('thr').value = q.threshold; $('thrLabel').textContent = (+q.threshold).toFixed(2);
   renderQueue(q); renderTaxo(q.taxonomy);
   await Promise.all([renderRecords(), renderEval(q.threshold), renderAudit()]);
