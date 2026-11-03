@@ -36,6 +36,8 @@
   .hl { background:rgba(31,95,191,.12); }
   .tag { font-size:11px; font-weight:700; letter-spacing:.04em; color:var(--warn); border:1px solid var(--warn); border-radius:3px; padding:0 5px; }
   .err { color:var(--bad); }
+  .prose { max-width:900px; } .prose h2 { font-size:18px; } .prose h3 { font-size:14px; margin:18px 0 6px; } .prose li { margin:3px 0; }
+  table.guide td:first-child { white-space:nowrap; padding-right:16px; } table.guide ul { margin:4px 0 0; padding-left:18px; }
 </style>
 </head>
 <body>
@@ -44,11 +46,75 @@
   <span class="banner">Synthetic data. Demo only.</span>
   <span id="simflag"></span>
   <span id="sandbox"></span>
-  <nav><button id="t1" class="on" onclick="showTab(1)">Workbench</button><button id="t2" onclick="showTab(2)">Evaluation (design view)</button></nav>
+  <nav><button id="t0" onclick="showTab(0)">About</button><button id="t1" onclick="showTab(1)">Workbench</button><button id="t2" onclick="showTab(2)">Evaluation (design view)</button></nav>
 </header>
 <div id="toast" class="card err" hidden style="position:fixed;right:16px;bottom:16px;z-index:9;max-width:420px"></div>
 <main>
-<div id="s1">
+<div id="s0">
+  <section class="card prose">
+    <h2>About this demo</h2>
+    <p>This demo covers one module of the product: <strong>AI-assisted supply onboarding</strong>. That is the engine the Connect strategy memo says keeps HT in the middle of the network ("the speed at which it can put clean, transacting supply on the network, and that speed compounds through AI-assisted onboarding").</p>
+    <p class="mute small">All data is synthetic. This is a demo, not a product. You are working in your own personal sandbox: nothing you do here is visible to anyone else, and it is removed after a week of inactivity.</p>
+
+    <h3>Where it sits in the memo</h3>
+    <ul>
+      <li><strong>Section 2, hard problem 1, "Mapping and normalization":</strong> the demo shows the problem itself, with two vendor formats, no shared ontology, and planted errors (a plan on the wrong room, a duplicate, a stale record, a rate outlier, a missing cancellation policy).</li>
+      <li><strong>Section 5, "AI leverage, in the product":</strong> the demo implements all three AI roles listed there:
+        <ul>
+          <li>Mapping proposals with confidence scores, where high-confidence ones auto-confirm and the rest go to a human.</li>
+          <li>Anomaly classification into the cross-vendor taxonomy, where detection is statistical and rule-based and the model only classifies what the rules found. The model may also propose a new class, which a human approves.</li>
+          <li>Exception triage, meaning a prioritized queue with a proposed fix from a class-level playbook, which a human approves.</li>
+        </ul></li>
+      <li><strong>The guardrails in that same section:</strong> confidence thresholds (the slider), an audit trail on every AI decision, a held-out evaluation set (the Evaluation tab), and the human-override record.</li>
+      <li><strong>"A cross-vendor anomaly taxonomy" as a moat:</strong> vendor and chain are tags, not classes. The taxonomy is the asset the memo says gets better with every property.</li>
+    </ul>
+
+    <h3>What the demo is meant to show</h3>
+    <ul>
+      <li>AI is used where the data is messy and judgment is needed.</li>
+      <li>A human stays in the loop, and each decision becomes labeled data (the audit table).</li>
+      <li>Wherever the fix is a plain rule, it is code, not a model (the three deterministic fixes).</li>
+    </ul>
+    <p class="mute small">About the model output: the proposals and classifications you see were produced once by a Claude model (Haiku tier) on this synthetic data and recorded. This site replays them and makes no live model calls.</p>
+  </section>
+
+  <section class="card prose">
+    <h2>Quick guide: how to use it</h2>
+    <p>Open the <strong>Workbench</strong> tab. It shows the result of onboarding 20 synthetic room and rate-plan records from two vendors. Work through the triage queue from the top.</p>
+
+    <h3>Reading a queue tile</h3>
+    <ul>
+      <li><strong>Priority</strong> ranks the queue. For an anomaly it is the severity of the problem class plus the revenue exposure (rate times rooms available). For a mapping review, lower model confidence ranks higher.</li>
+      <li><strong>Model confidence</strong> is green when it meets the threshold slider and amber when it does not.</li>
+      <li><strong>Rule and evidence</strong> is what the deterministic detector found. No model is involved in detection. <strong>Model rationale</strong> is the model's explanation of the label it chose.</li>
+      <li><strong>Proposed fix (class playbook)</strong> is standard advice for that class of problem.</li>
+    </ul>
+
+    <h3>The actions</h3>
+    <table class="guide">
+      <tr><th>Action</th><th>What it does</th></tr>
+      <tr><td><strong>Auto-confirm threshold</strong> (slider)</td><td>Mapping proposals at or above it are confirmed automatically. Those below it appear in the queue as "Review mapping" tiles. Most of the effect is between 0.70 and 0.90. Moving it never changes decisions you have already made.</td></tr>
+      <tr><td><strong>Approve</strong></td><td>Accepts the model's proposal (its mapping, or its class for an anomaly) and records it in the audit trail. For an anomaly, this records your decision only. It does not change the data.</td></tr>
+      <tr><td><strong>Approve and apply fix</strong></td><td>Appears on three kinds of anomaly and writes the correction to the data directly, with no model involved, recording before and after in the audit trail.
+        <ul>
+          <li><em>Rate plan on the wrong room:</em> moves the plan to the room it is eligible for. The record's mapping then returns to the queue to be confirmed.</li>
+          <li><em>Duplicate availability:</em> suppresses the copy and keeps the original.</li>
+          <li><em>Schema drift:</em> registers the renamed field as an alias, so it stops being flagged.</li>
+        </ul></td></tr>
+      <tr><td><strong>Override</strong></td><td>Rejects the model's proposal. For an anomaly you may pick a different class, or pick none to record that you disagreed. For a mapping, choose the fields you are correcting. Either way, the model's original proposal and your override are both kept in the audit trail.</td></tr>
+      <tr><td><strong>Note</strong> (text box)</td><td>Optional comment saved with your decision.</td></tr>
+      <tr><td><strong>Anomaly taxonomy</strong> (section below the queue)</td><td>If the model proposes a new class (for example a parity break), a human has to <strong>Approve class</strong> or <strong>Reject</strong> it before any anomaly using it can be approved.</td></tr>
+      <tr><td><strong>Records</strong> and <strong>Audit trail</strong></td><td>The Records table shows every record, its mapping status and open anomalies. The Audit trail lists each decision with the model version, the model's confidence, and your action.</td></tr>
+      <tr><td><strong>Reset my sandbox</strong></td><td>Puts your own copy of the data back to the start. It does not affect anyone else.</td></tr>
+    </table>
+
+    <h3>The Evaluation tab</h3>
+    <p>This is the design and backend view. It scores the model's mapping proposals against known answers for 8 held-out records, and shows precision and recall at each threshold, so the auto-confirm threshold can be chosen with evidence. Its slider shows a what-if only and changes no data. With only 8 records, one record moves a number by 12 points or more.</p>
+    <p><button class="act" onclick="showTab(1)">Start with the workbench</button></p>
+  </section>
+</div>
+
+<div id="s1" hidden>
   <section class="card">
     <div class="row">
       <strong>Auto-confirm threshold</strong>

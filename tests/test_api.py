@@ -160,6 +160,24 @@ def test_screen_2_is_gone(app):
 
 def test_evaluation_lives_on_its_own_tab():
     html = (ROOT / "web" / "index.html").read_text()
-    s1 = html[html.index('<div id="s1">'):html.index('<div id="s2"')]
+    s1 = html[html.index('<div id="s1"'):html.index('<div id="s2"')]
     s2 = html[html.index('<div id="s2"'):]
     assert 'id="eval"' not in s1 and 'id="eval"' in s2
+
+
+def test_about_tab_gives_context_and_a_guide():
+    html = (ROOT / "web" / "index.html").read_text()
+    s0 = html[html.index('<div id="s0">'):html.index('<div id="s1"')]
+    for needle in ("AI-assisted supply onboarding", "Mapping and normalization", "Quick guide", "Approve and apply fix",
+                   "Override", "Auto-confirm threshold", "Reset my sandbox", "Evaluation tab", "synthetic"):
+        assert needle in s0, needle
+    assert [html.index(f'id="t{i}"') for i in (0, 1, 2)] == sorted(html.index(f'id="t{i}"') for i in (0, 1, 2))
+    assert "\u2014" not in html and "\u2013" not in html          # no em or en dashes in user-facing copy
+
+
+def test_guide_names_only_buttons_that_exist():
+    html = (ROOT / "web" / "index.html").read_text()
+    js = (ROOT / "web" / "app.js").read_text()
+    for label in ("Approve and apply fix", "Approve without applying", "Override", "Approve class"):
+        assert label in js or label in html, label
+    assert "Reset my sandbox" in html

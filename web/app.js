@@ -21,9 +21,13 @@ const guard = (fn) => async (...a) => { try { await fn(...a); } catch (e) { toas
 
 
 function showTab(n) {
-  $('s1').hidden = n !== 1; $('s2').hidden = n !== 2;
-  $('t1').classList.toggle('on', n === 1); $('t2').classList.toggle('on', n === 2);
+  for (const i of [0, 1, 2]) { $('s' + i).hidden = n !== i; $('t' + i).classList.toggle('on', n === i); }
+  try { localStorage.setItem('tab', String(n)); } catch (e) { /* storage may be blocked; the tab is a convenience */ }
+  window.scrollTo(0, 0);
 }
+let startTab = 0;   // first visit lands on About; afterwards the last tab used
+try { const t = localStorage.getItem('tab'); if (t !== null) startTab = Math.min(2, Math.max(0, +t || 0)); } catch (e) { startTab = 0; }
+showTab(startTab);
 
 let TAXO = [];
 async function loadAll() {
