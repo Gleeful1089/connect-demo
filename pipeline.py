@@ -50,6 +50,6 @@ def run(threshold: float | None = None):
 def set_threshold(conn, threshold: float):
     """Re-split mappings not yet decided by a human."""
     db.set_setting(conn, "threshold", threshold)
-    conn.execute("UPDATE mappings SET status='auto_confirmed' WHERE status IN('review','auto_confirmed') AND confidence>=?", (threshold,))
-    conn.execute("UPDATE mappings SET status='review' WHERE status IN('review','auto_confirmed') AND confidence<?", (threshold,))
+    conn.execute("UPDATE mappings SET status='auto_confirmed' WHERE status IN('review','auto_confirmed') AND final_json IS NULL AND confidence>=?", (threshold,))
+    conn.execute("UPDATE mappings SET status='review' WHERE status IN('review','auto_confirmed') AND final_json IS NULL AND confidence<?", (threshold,))
     conn.commit()

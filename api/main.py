@@ -14,7 +14,7 @@ import db
 import llm
 import pipeline
 from evaluation import heldout
-from triage import queue
+from triage import fixes, queue
 
 app = FastAPI(title="Connect demo", version="0.1")
 WEB = Path(__file__).resolve().parent.parent / "web"
@@ -95,6 +95,18 @@ class Decision(BaseModel):
 def decide(item_id: str, d: Decision):
     queue.decide(conn(), item_id, d.action, d.override, d.note)
     return {"ok": True}
+
+
+class FixReq(BaseModel):
+    note: str = ""
+
+
+@app.post("/api/queue/{item_id}/fix")
+def apply_fix(item_id: str, d: FixReq):
+    kind, ident = item_id.split(":", 1)
+    if kind != "anom":
+        raise ValueError("only anomalies have fixes")
+    return fixes.apply_fix(conn(), int(ident), note=d.note)
 
 
 class ClassDecision(BaseModel):

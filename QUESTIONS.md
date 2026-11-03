@@ -38,3 +38,17 @@ Nothing here was approved by anyone. Each assumption is the simplest default tha
 17. **Demo shortcut:** Screen 2 has a button that approves every pending item so the search has confirmed inventory.
     Its decisions are written to the audit table with actor `demo-shortcut`.
 18. **R17 prepaid** (non-refundable but not stated as prepaid) is labelled false. A different reviewer might disagree.
+
+## Added 2026-11-03: fix action and override semantics (per your instructions)
+19. **Override on an anomaly needs no class.** It records the model's triage (class and confidence), the override, and any
+    note, and marks the anomaly `overridden`. I assumed an overridden anomaly no longer blocks the record from search,
+    because you rejected the triage. Say so if overridden anomalies should keep the record held.
+20. **Override on a mapping still needs at least one corrected field**, since otherwise it would be a no-op. Approve covers
+    "accept as is". The error message now says so.
+21. **Fix action (rate-plan-on-wrong-room only).** Writes directly: moves the plan to the one room named in its
+    `applies_to`, and copies room attributes (category, bed, view, occupancy) from another listing of that room. It
+    refuses when the plan lists more than one eligible room or the target room has no other listing.
+22. **After a fix, the mapping returns to the queue for human confirmation**, since its room attributes changed. The
+    model's original proposal is not modified, so the held-out evaluation is unaffected.
+23. **Other classes have no automatic fix yet.** Candidates: duplicate-availability (suppress, deterministic) and
+    schema-drift (add the field alias). Rate outliers, stale data and missing cancellation policies need the hotel.

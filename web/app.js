@@ -49,7 +49,7 @@ function renderQueue(q) {
     const evidence = it.kind === 'anomaly' ? `<div class="small mute">Rule: ${esc(it.rule)}. Evidence: ${esc(JSON.stringify(it.evidence))}</div>` : '';
     const override = it.kind === 'mapping'
       ? FIELDS.map((f) => `<label class="small">${f} <select data-f="${f}"><option value="">keep</option>${CHOICES[f].map((v) => `<option>${v}</option>`).join('')}</select></label>`).join(' ')
-      : `<label class="small">class <select data-f="class"><option value="">keep</option>${TAXO.filter((t) => t.status === 'approved').map((t) => `<option>${esc(t.name)}</option>`).join('')}</select></label>`;
+      : `<label class="small">class <select data-f="class"><option value="">no class (record override only)</option>${TAXO.filter((t) => t.status === 'approved').map((t) => `<option>${esc(t.name)}</option>`).join('')}</select></label>`;
     return `<div class="card" data-id="${esc(it.item_id)}">
       <div class="row"><strong>${esc(it.title)}</strong><span class="pill">priority ${it.priority}</span>
         <span class="pill ${it.confidence >= 0.85 ? 'ok' : 'warn'}">model confidence ${(+it.confidence).toFixed(2)}</span>
@@ -57,10 +57,12 @@ function renderQueue(q) {
       <div style="margin:6px 0">${proposed}</div>${evidence}
       ${it.rationale ? `<div class="small mute">Model rationale: ${esc(it.rationale)}</div>` : ''}
       <div class="small"><strong>Proposed fix (class playbook):</strong> ${esc(it.fix)}</div>
+      ${it.fix_preview ? `<div class="small"><strong>Automatic fix (deterministic, writes data):</strong> ${esc(it.fix_preview)}. The mapping then returns to the queue for confirmation.</div>` : ''}
       ${it.note ? `<div class="small err">Parse note: ${esc(it.note)}</div>` : ''}
       <div class="row" style="margin-top:8px">${override}
         <input class="note" placeholder="note (optional)" style="flex:1;min-width:140px">
-        <button class="act" onclick="decide('${esc(it.item_id)}','approve')">Approve</button>
+        ${it.fix_preview ? `<button class="act" title="Writes to the data" onclick="applyFix('${esc(it.item_id)}')">Approve and apply fix</button>` : ''}
+        <button class="${it.fix_preview ? 'alt' : 'act'}" onclick="decide('${esc(it.item_id)}','approve')">${it.fix_preview ? 'Approve without applying' : 'Approve'}</button>
         <button class="alt" onclick="decide('${esc(it.item_id)}','override')">Override</button></div></div>`;
   }).join('');
 }
@@ -79,6 +81,11 @@ function renderTaxo(rows) {
     <td>${t.status === 'proposed' ? `<button class="act" onclick="classDecision('${esc(t.name)}',true)">Approve class</button> <button class="alt" onclick="classDecision('${esc(t.name)}',false)">Reject</button>` : ''}</td></tr>`).join('')}</table>
     <div class="small mute" style="margin-top:6px">Vendor and chain are metadata tags on an anomaly. They are never part of a class. The model may propose a class, but only a human can approve it.</div>`;
 }
+const applyFix = guard(async (id) => {
+  const card = document.querySelector(`[data-id="${CSS.escape(id)}"]`);
+  await api(`/api/queue/${encodeURIComponent(id)}/fix`, { note: card.querySelector('.note').value });
+  await loadAll();
+});
 const classDecision = guard(async (name, approve) => { await api(`/api/taxonomy/${encodeURIComponent(name)}`, { approve }); await loadAll(); });
 
 async function renderRecords() {

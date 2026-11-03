@@ -5,6 +5,7 @@ import json
 
 import db
 import ontology
+from triage import fixes
 
 
 def _playbook(cls):
@@ -25,7 +26,7 @@ def build_queue(conn) -> list[dict]:
         items.append({
             "item_id": f"map:{m['record_id']}", "kind": "mapping", "record_id": m["record_id"], "priority": pts,
             "title": f"Review mapping, {r['room_key']} / {r['plan_key']}",
-            "proposed": json.loads(m["proposed_json"]), "confidence": m["confidence"],
+            "proposed": json.loads(m["final_json"] or m["proposed_json"]), "confidence": m["confidence"],
             "model_version": m["model_version"], "provenance": m["provenance"],
             "fix": "Confirm or correct the proposed canonical fields.", "note": m["parse_note"] or "",
             "hotel": r["hotel_name"]})
@@ -41,7 +42,8 @@ def build_queue(conn) -> list[dict]:
             "proposed": {"class": cls}, "confidence": a["class_confidence"], "model_version": a["model_version"],
             "provenance": a["provenance"], "fix": fix, "rule": a["rule"], "evidence": json.loads(a["evidence_json"]),
             "rationale": a["rationale"], "hotel": r["hotel_name"],
-            "new_class_pending": bool(taxo and taxo["status"] == "proposed")})
+            "new_class_pending": bool(taxo and taxo["status"] == "proposed"),
+            "fix_preview": fixes.preview(conn, a)})
     return sorted(items, key=lambda i: (-i["priority"], i["item_id"]))
 
 
@@ -54,15 +56,16 @@ def decide(conn, item_id: str, action: str, override: dict | None = None, note: 
         if m is None or m["status"] != "review":
             raise ValueError("mapping not awaiting review")
         proposed = json.loads(m["proposed_json"])
+        current = json.loads(m["final_json"] or m["proposed_json"])
         if action == "override":
             if not override:
-                raise ValueError("override requires corrected fields")
-            final = {**proposed, **override}
+                raise ValueError("pick at least one field to correct (or use Approve)")
+            final = {**current, **override}
             for f, allowed in ontology.ALLOWED.items():
                 if f in override and override[f] not in allowed:
                     raise ValueError(f"{f}={override[f]!r} not in ontology")
         else:
-            final = proposed
+            final = current
         conn.execute("UPDATE mappings SET status=?, final_json=? WHERE record_id=?",
                      ("confirmed" if action == "approve" else "overridden", json.dumps(final), ident))
         db.audit(conn, item_id, "mapping", m["model_version"], m["confidence"], proposed, action, final, note, actor)
@@ -71,18 +74,24 @@ def decide(conn, item_id: str, action: str, override: dict | None = None, note: 
         if a is None or a["status"] != "open":
             raise ValueError("anomaly not open")
         final_cls = a["class"]
+        new_status = "resolved"
         if action == "override":
-            final_cls = (override or {}).get("class")
-            ok = conn.execute("SELECT 1 FROM taxonomy WHERE name=? AND status='approved'", (final_cls,)).fetchone()
-            if not ok:
-                raise ValueError(f"class {final_cls!r} is not an approved taxonomy class")
+            final_cls = (override or {}).get("class") or None
+            if final_cls is None:
+                # Override with no class: the human rejects the triage. Record what it said and that it was overridden.
+                new_status = "overridden"
+            else:
+                ok = conn.execute("SELECT 1 FROM taxonomy WHERE name=? AND status='approved'", (final_cls,)).fetchone()
+                if not ok:
+                    raise ValueError(f"class {final_cls!r} is not an approved taxonomy class")
         else:
             taxo = conn.execute("SELECT status FROM taxonomy WHERE name=?", (final_cls,)).fetchone()
             if final_cls is None or (taxo and taxo["status"] == "proposed"):
                 raise ValueError("class is unclassified or a proposed new class; approve the class or override it first")
-        conn.execute("UPDATE anomalies SET status='resolved', final_class=? WHERE id=?", (final_cls, int(ident)))
+        conn.execute("UPDATE anomalies SET status=?, final_class=? WHERE id=?", (new_status, final_cls, int(ident)))
+        final = {"class": final_cls, "fix": _playbook(final_cls)[0]} if final_cls else {"class": None, "overridden": True}
         db.audit(conn, item_id, "anomaly", a["model_version"], a["class_confidence"], {"class": a["class"]},
-                 action, {"class": final_cls, "fix": _playbook(final_cls)[0]}, note, actor)
+                 action, final, note, actor)
     else:
         raise ValueError("unknown item")
     conn.commit()

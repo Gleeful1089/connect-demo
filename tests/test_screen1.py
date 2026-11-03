@@ -145,3 +145,87 @@ def test_invalid_model_output_cannot_auto_confirm():
     mapping, conf, note = mapper.validate({"category": "palace", "bed": "king", "view": "city", "max_occupancy": 2,
                                            "meal_plan": "breakfast", "cancellation": "free_48h", "prepaid": False, "confidence": 0.99})
     assert conf <= 0.3 and "category" in note
+
+
+# ---- fix action and override semantics ----
+def _anom(conn, record_id):
+    return next(i for i in queue.build_queue(conn) if i["kind"] == "anomaly" and i["record_id"] == record_id)
+
+
+def test_only_wrong_room_plans_have_a_fix(conn):
+    previews = {i["record_id"]: i["fix_preview"] for i in queue.build_queue(conn) if i["kind"] == "anomaly"}
+    assert previews["R03"] == "Move plan FAM-HB from room DLX-KG-OV to room FAM-2Q-GD"
+    assert all(v is None for k, v in previews.items() if k != "R03")
+
+
+def test_apply_fix_moves_the_plan_and_writes_audit_before_after(conn):
+    from triage import fixes
+    item = _anom(conn, "R03")
+    out = fixes.apply_fix(conn, int(item["item_id"].split(":")[1]))
+    rec = conn.execute("SELECT * FROM records WHERE id='R03'").fetchone()
+    assert rec["room_key"] == "FAM-2Q-GD" and json.loads(rec["view_json"])["room_code"] == "FAM-2Q-GD"
+    assert out["before"]["room_key"] == "DLX-KG-OV" and out["after"]["room_key"] == "FAM-2Q-GD"
+    assert out["after"]["room_fields"]["max_occupancy"] == 5 and out["after"]["room_fields"]["category"] == "family"
+    audit_row = conn.execute("SELECT * FROM audit WHERE item_id=?", (item["item_id"],)).fetchone()
+    assert audit_row["human_action"] == "approve_and_apply_fix" and "DLX-KG-OV" in audit_row["final"]
+    m = conn.execute("SELECT * FROM mappings WHERE record_id='R03'").fetchone()
+    assert m["status"] == "review"                      # room attributes changed, so a human re-confirms
+
+
+def test_fix_never_touches_the_model_proposal_or_the_eval(conn):
+    from triage import fixes
+    before_prop = conn.execute("SELECT proposed_json FROM mappings WHERE record_id='R03'").fetchone()[0]
+    before_eval = heldout.evaluate(conn, 0.85)["current"]
+    fixes.apply_fix(conn, int(_anom(conn, "R03")["item_id"].split(":")[1]))
+    assert conn.execute("SELECT proposed_json FROM mappings WHERE record_id='R03'").fetchone()[0] == before_prop
+    assert heldout.evaluate(conn, 0.85)["current"] == before_eval
+
+
+def test_threshold_change_does_not_undo_a_fixed_mapping(conn):
+    from triage import fixes
+    fixes.apply_fix(conn, int(_anom(conn, "R03")["item_id"].split(":")[1]))
+    pipeline.set_threshold(conn, 0.0)
+    assert conn.execute("SELECT status FROM mappings WHERE record_id='R03'").fetchone()[0] == "review"
+
+
+def test_fixed_record_becomes_searchable_once_remapped_and_confirmed(conn):
+    from buyer import muse
+    from search import connect_search as cs
+    from triage import fixes
+    fixes.apply_fix(conn, int(_anom(conn, "R03")["item_id"].split(":")[1]))
+    assert "R03" not in [o["offer_id"] for o in cs.search(conn, muse.STRUCTURED_REQUEST)["offers"]]  # mapping unconfirmed
+    queue.decide(conn, "map:R03", "approve")
+    offers = cs.search(conn, muse.STRUCTURED_REQUEST)["offers"]
+    o = next(o for o in offers if o["offer_id"] == "R03")
+    assert o["room"]["max_occupancy"] == 5 and o["rate_plan"]["meal_plan"] == "half_board"
+
+
+def test_fix_cannot_run_twice_or_on_unfixable_classes(conn):
+    from triage import fixes
+    aid = int(_anom(conn, "R03")["item_id"].split(":")[1])
+    fixes.apply_fix(conn, aid)
+    with pytest.raises(ValueError):
+        fixes.apply_fix(conn, aid)
+    with pytest.raises(ValueError):
+        fixes.apply_fix(conn, int(_anom(conn, "R10")["item_id"].split(":")[1]))
+
+
+def test_fixes_module_has_no_llm_imports():
+    assert not _imports(ROOT / "triage" / "fixes.py") & {"llm", "anthropic", "mapping", "classify"}
+
+
+def test_override_without_class_records_triage_and_override(conn):
+    item = _anom(conn, "R10")
+    queue.decide(conn, item["item_id"], "override", None, note="not actually stale")
+    row = conn.execute("SELECT * FROM audit WHERE item_id=?", (item["item_id"],)).fetchone()
+    assert json.loads(row["proposed"]) == {"class": "stale-availability"} and row["human_action"] == "override"
+    assert json.loads(row["final"]) == {"class": None, "overridden": True} and row["model_confidence"] is not None
+    a = conn.execute("SELECT status, final_class FROM anomalies WHERE id=?", (int(item["item_id"].split(":")[1]),)).fetchone()
+    assert (a["status"], a["final_class"]) == ("overridden", None)
+    assert item["item_id"] not in [i["item_id"] for i in queue.build_queue(conn)]
+
+
+def test_mapping_override_with_no_fields_is_rejected_clearly(conn):
+    item = next(i for i in queue.build_queue(conn) if i["kind"] == "mapping")
+    with pytest.raises(ValueError, match="pick at least one field"):
+        queue.decide(conn, item["item_id"], "override", None)
