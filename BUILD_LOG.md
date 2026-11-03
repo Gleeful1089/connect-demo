@@ -67,32 +67,27 @@ to be append-only. Applied fixes cannot be undone this way, since they changed d
 stale data and missing policies need the hotel.
 
 **D9. Remove Screen 2.** Chris: "delete anything about 'screen 2' from the app. I don't want to see it in the header
-navigation and don't need the functionality." No reason was given. Changed: the booking flow, the buyer-agent mock, the
-search, and the entire money module (fees, FX, ledger, virtual card) and their tests were deleted (recoverable from git).
-Consequence I flagged later: the demo now makes only the AI half of the original claim; "money stays deterministic" is
-stated in the memo but no longer demonstrated. Chris's response was "OK, great."
+navigation and don't need the functionality." His reason, given afterward and similar to his reason for removing the evaluation:
+Screen 2 was a second functionality to demo, and lower-impact than the onboarding workbench the demo is meant to show.
+Changed: the booking flow, the buyer-agent mock, the search, and the entire money module (fees, FX, ledger, virtual
+card) and their tests were deleted (recoverable from git). Consequence I flagged later: the demo now makes only the AI
+half of the original claim; "money stays deterministic" is stated in the memo but no longer demonstrated. Chris's
+response was "OK, great."
 
-**D10. The threshold slider had no visible effect.** Chris: "what is the purpose of the 'auto-confirm threshold'
-slider? I moved it around but didnt notice the impact." Finding: he had it at 0.40 and the model's lowest confidence
-was 0.60, so nothing could change below 0.60; the real effect sat between 0.70 and 0.90, shown only in a small gray
-counter, and nothing downstream consumed confirmed mappings after Screen 2 was removed. I offered three options
-(a better default start, linking the two sliders, a note such as "13 more records would need review at 0.80"). No option
-was chosen, so no change was made. Still open.
-
-**D11. Move the evaluation out of the main workflow.** Chris: "lets move the evaluation on the hold-out set to a second
+**D10. Move the evaluation out of the main workflow.** Chris: "lets move the evaluation on the hold-out set to a second
 tab. this is more backend/design focus, not the actual UI that a user would interact with while using the system."
 Changed: Evaluation became its own tab, labeled as a design view, with a note that its slider changes no data.
 
-**D12. Confidence color must follow the slider.** Chris, in the browser: the last two issues "have model confidence .85
+**D11. Confidence color must follow the slider.** Chris, in the browser: the last two issues "have model confidence .85
 and show up as green, but i set the auto-confirm threshold to .9 so they should be amber." This was the first time the
 UI was seen in a real browser; my own checks had only looked for crashes. Fixed (Part 2, item 11).
 
-**D13. Which part of the product is this a demo for?** Chris asked me to explain the scope. Answer: one module,
+**D12. Which part of the product is this a demo for?** Chris asked me to explain the scope. Answer: one module,
 AI-assisted supply onboarding (memo Section 2 hard problem 1 and Section 5 "AI leverage"), with explicit gaps (money, the
 compounding effect over many properties, buyers, activation). He accepted it, and the answer became the basis of the
 About tab.
 
-**D14. Host it with no logins and a personal sandbox for every visitor.** Chris: "I don't want to manage any logins or
+**D13. Host it with no logins and a personal sandbox for every visitor.** Chris: "I don't want to manage any logins or
 permissions; ideally when a new user starts the app for the first time it will automatically create synthetic data so
 they have a 'personal sandbox' that has all the functionality but won't alter any other user (or my) use of the app."
 Design that followed: a random cookie names a private database built from the recorded model outputs on first visit;
@@ -102,29 +97,29 @@ sharing one id) made them fail. Chris's choices at the gates: a public GitHub re
 separate Railway project, and rewriting git history before the first push so the commits carry a noreply identity and
 mention nothing private.
 
-**D15. Add context on the page.** Chris: "I think I should add a readme to the page so users have context", and he
+**D14. Add context on the page.** Chris: "I think I should add a readme to the page so users have context", and he
 supplied the text, plus a quick guide to the actions. Changed: an About tab as the landing page with his text (adapted
 to read to HT readers rather than to him), a table explaining each action, and a note that the model output was
 recorded once and replayed.
 
-**D16. Remove the evaluation entirely.** After asking me to explain it again (what it measures and what it is for),
+**D15. Remove the evaluation entirely.** After asking me to explain it again (what it measures and what it is for),
 Chris: "I think the evaluation concept in general is too complicated. lets' remove it from the app and from the about."
 He asked for two sentences in the About tab on how precision and recall were assessed during development and that the
 threshold can be raised or lowered. Changed: the Evaluation tab and its API route are gone; the two sentences were
-added. I kept the scoring code as a development script (`make evaluate`) so the claim stays reproducible; deleting it is
-his call.
+added. I kept the scoring code as a development script (`make evaluate`) so the claim stays reproducible, and Chris
+agreed to keep it.
 
-**D17. Put the product decisions in this log.** Chris noticed the log held only technical bugs and asked for the product
+**D16. Put the product decisions in this log.** Chris noticed the log held only technical bugs and asked for the product
 direction too. That is this section.
 
 ## The pattern in the removals and moves
-For the evaluation, Chris stated his test himself: whether something is part of "the actual UI that a user would interact
-with while using the system" (D11), and later whether it is too complicated for that audience (D16). Screen 2 was
-removed with no reason given (D9), so I make no claim about why. In the other direction, the fix actions (D6, D8) and the
-simpler override (D7) came from Chris trying the workbench as a reviewer and asking what each control actually did.
-Three of his corrections (D10, D12 and the missing fix button in D8) were things my automated checks could not see,
-because they only looked for crashes and correct data, not for whether a control was understandable or correctly
-colored.
+Chris's test was impact on what the demo is meant to show, and who it is for. The evaluation was first moved to a second
+tab because it is "more backend/design focus, not the actual UI that a user would interact with" (D10), then removed
+because it was "too complicated" (D15). Screen 2 was removed for a similar reason: a second functionality, lower-impact
+than the onboarding workbench being shown (D9). In the other direction, the fix actions (D6, D8) and the simpler override
+(D7) came from Chris trying the workbench as a reviewer and asking what each control actually did. Two of his
+corrections (the confidence color in D11 and the missing fix button in D8) were things my automated checks could not see,
+because they only looked for crashes and correct data, not for whether a control was correctly colored or visible.
 
 ## Brief versus current app
 | In the brief | In the current app |
@@ -133,9 +128,9 @@ colored.
 | Canonical ontology; model mapping with confidence; threshold auto-confirm and review queue | Kept as specified |
 | Rule-based anomaly detection with no model; model classification into the taxonomy; new classes need approval | Kept as specified |
 | Triage queue with playbook fixes, human approve or override, audit table | Kept; override changed to need no class (D7) |
-| Evaluation panel with threshold slider | Built, moved to its own tab (D11), then removed from the app (D16); kept as a development script |
+| Evaluation panel with threshold slider | Built, moved to its own tab (D10), then removed from the app (D15); kept as a development script |
 | Screen 2: buyer agent, deterministic search, itemized price, fees, statements | Built, then removed (D9) |
-| Not in the brief | Deterministic apply-fix actions for three classes (D6, D8); undo (D8); per-visitor sandboxes and hosting (D14); About tab and guide (D15) |
+| Not in the brief | Deterministic apply-fix actions for three classes (D6, D8); undo (D8); per-visitor sandboxes and hosting (D13); About tab and guide (D14) |
 
 # Part 2: What went wrong
 
