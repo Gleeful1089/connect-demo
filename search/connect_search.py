@@ -35,7 +35,9 @@ def search(conn, req: dict) -> dict:
         why = None
         if r["city"] != req["destination"]:
             continue
-        if m["status"] == "review":
+        if r["suppressed_reason"]:
+            why = f"suppressed: {r['suppressed_reason']}"
+        elif m["status"] == "review":
             why = "mapping not confirmed"
         else:
             for a in conn.execute("SELECT * FROM anomalies WHERE record_id=?", (r["id"],)):

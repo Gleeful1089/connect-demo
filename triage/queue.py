@@ -109,3 +109,22 @@ def approve_new_class(conn, name: str, approve: bool = True, actor: str = "revie
     db.audit(conn, f"class:{name}", "taxonomy", row["proposed_by"], None, {"name": name, "description": row["description"]},
              "approve" if approve else "reject", {"status": "approved" if approve else "rejected"}, "", actor)
     conn.commit()
+
+
+def undo_decision(conn, audit_id: int, actor: str = "reviewer", note: str = "") -> None:
+    """Reverse a plain Approve/Override of an anomaly. The audit trail is append-only: the original row stays
+    and a reversal row is added. Applied fixes cannot be undone here because they changed data."""
+    row = conn.execute("SELECT * FROM audit WHERE id=?", (audit_id,)).fetchone()
+    if row is None or row["kind"] != "anomaly" or row["human_action"] not in ("approve", "override"):
+        raise ValueError("only a plain approve or override of an anomaly can be undone")
+    later = conn.execute("SELECT 1 FROM audit WHERE item_id=? AND id>?", (row["item_id"], audit_id)).fetchone()
+    if later:
+        raise ValueError("a later decision exists for this item")
+    ident = int(row["item_id"].split(":")[1])
+    a = conn.execute("SELECT status FROM anomalies WHERE id=?", (ident,)).fetchone()
+    if a is None or a["status"] not in ("resolved", "overridden"):
+        raise ValueError("anomaly is not in a decided state")
+    conn.execute("UPDATE anomalies SET status='open', final_class=NULL WHERE id=?", (ident,))
+    db.audit(conn, row["item_id"], "anomaly", row["model_version"], row["model_confidence"],
+             json.loads(row["proposed"]), "undo", {"reverted_audit_id": audit_id}, note, actor)
+    conn.commit()

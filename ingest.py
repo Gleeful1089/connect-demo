@@ -19,15 +19,17 @@ def to_cents(value: str) -> int:
     return int((Decimal(value) * 100).to_integral_value())
 
 
-def parse_format_a(path: Path = DATA / "format_a.json") -> list[dict]:
+def parse_format_a(path: Path = DATA / "format_a.json", registered: dict | None = None) -> list[dict]:
+    """registered: {unexpected_key: canonical_key} aliases a human has approved. They are not reported as drift."""
+    registered = registered or {}
     doc = json.loads(path.read_text())
     prop = doc["property"]
     out = []
     for room in doc["rooms"]:
         for plan in room["ratePlans"]:
             keys = set(plan)
-            unexpected = sorted(keys - A_EXPECTED)
-            missing = sorted(A_REQUIRED - keys)
+            unexpected = sorted(k for k in keys - A_EXPECTED if k not in registered)
+            missing = sorted(k for k in A_REQUIRED - keys if k not in {registered[u] for u in keys & set(registered)})
             p = dict(plan)
             for alias, real in A_ALIASES.items():
                 if alias in p and real not in p:
@@ -63,8 +65,8 @@ def parse_format_b(path: Path = DATA / "format_b.csv") -> list[dict]:
     return out
 
 
-def load_all() -> list[dict]:
-    records = parse_format_a() + parse_format_b()
+def load_all(registered_a: dict | None = None) -> list[dict]:
+    records = parse_format_a(registered=registered_a) + parse_format_b()
     for i, r in enumerate(records, start=1):
         r["id"] = f"R{i:02d}"
     return records

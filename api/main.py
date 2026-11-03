@@ -74,7 +74,8 @@ def records():
             "id": r["id"], "hotel": r["hotel_name"], "format": r["source_format"], "room": r["room_key"], "plan": r["plan_key"],
             "currency": r["currency"], "rate_cents": r["rate_cents"], "status": m["status"], "confidence": m["confidence"],
             "proposed": json.loads(m["proposed_json"]), "final": json.loads(m["final_json"]) if m["final_json"] else None,
-            "anomalies": [a["class"] or a["rule"] for a in c.execute("SELECT * FROM anomalies WHERE record_id=? AND status='open'", (r["id"],))]})
+            "anomalies": ([f"suppressed: {r['suppressed_reason']}"] if r["suppressed_reason"] else [])
+            + [a["class"] or a["rule"] for a in c.execute("SELECT * FROM anomalies WHERE record_id=? AND status='open'", (r["id"],))]})
     return out
 
 

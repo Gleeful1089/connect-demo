@@ -12,7 +12,10 @@ SCHEMA = """
 CREATE TABLE IF NOT EXISTS records(
   id TEXT PRIMARY KEY, hotel_id TEXT, hotel_name TEXT, currency TEXT, city TEXT, source_format TEXT,
   room_key TEXT, plan_key TEXT, rate_cents INTEGER, public_cents INTEGER, avail INTEGER,
-  updated_at TEXT, view_json TEXT, extra_json TEXT, heldout INTEGER DEFAULT 0);
+  updated_at TEXT, view_json TEXT, extra_json TEXT, heldout INTEGER DEFAULT 0, suppressed_reason TEXT);
+CREATE TABLE IF NOT EXISTS connector_aliases(
+  hotel_id TEXT, source_format TEXT, unexpected TEXT, canonical TEXT, created_at TEXT,
+  PRIMARY KEY(hotel_id, source_format, unexpected));
 CREATE TABLE IF NOT EXISTS mappings(
   record_id TEXT PRIMARY KEY, proposed_json TEXT, confidence REAL, model_version TEXT, provenance TEXT,
   status TEXT, final_json TEXT, parse_note TEXT);
@@ -37,6 +40,9 @@ def connect() -> sqlite3.Connection:
     conn = sqlite3.connect(config.DB_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.executescript(SCHEMA)
+    if "suppressed_reason" not in {r[1] for r in conn.execute("PRAGMA table_info(records)")}:
+        conn.execute("ALTER TABLE records ADD COLUMN suppressed_reason TEXT")   # databases created before this column
+        conn.commit()
     return conn
 
 

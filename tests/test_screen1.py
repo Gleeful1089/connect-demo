@@ -152,10 +152,12 @@ def _anom(conn, record_id):
     return next(i for i in queue.build_queue(conn) if i["kind"] == "anomaly" and i["record_id"] == record_id)
 
 
-def test_only_wrong_room_plans_have_a_fix(conn):
+def test_only_three_classes_have_a_fix(conn):
     previews = {i["record_id"]: i["fix_preview"] for i in queue.build_queue(conn) if i["kind"] == "anomaly"}
     assert previews["R03"] == "Move plan FAM-HB from room DLX-KG-OV to room FAM-2Q-GD"
-    assert all(v is None for k, v in previews.items() if k != "R03")
+    assert previews["R08"] == "Suppress R08 (exact duplicate of R07); R07 stays listed"
+    assert previews["R04"].startswith("Register field alias 'price' as 'rate' for Harbor Grand")
+    assert {k for k, v in previews.items() if v} == {"R03", "R04", "R08"}
 
 
 def test_apply_fix_moves_the_plan_and_writes_audit_before_after(conn):
@@ -229,3 +231,84 @@ def test_mapping_override_with_no_fields_is_rejected_clearly(conn):
     item = next(i for i in queue.build_queue(conn) if i["kind"] == "mapping")
     with pytest.raises(ValueError, match="pick at least one field"):
         queue.decide(conn, item["item_id"], "override", None)
+
+
+# ---- duplicate, drift, undo ----
+def _aid(conn, rid):
+    return int(_anom(conn, rid)["item_id"].split(":")[1])
+
+
+def test_duplicate_fix_suppresses_the_copy_and_keeps_the_original(conn):
+    from buyer import muse
+    from search import connect_search as cs
+    from triage import fixes
+    fixes.apply_fix(conn, _aid(conn, "R08"))
+    assert conn.execute("SELECT suppressed_reason FROM records WHERE id='R08'").fetchone()[0] == "duplicate of R07"
+    assert conn.execute("SELECT suppressed_reason FROM records WHERE id='R07'").fetchone()[0] is None
+    r = cs.search(conn, muse.STRUCTURED_REQUEST)
+    ids = [o["offer_id"] for o in r["offers"]]
+    assert "R08" not in ids and "R07" in ids
+    assert any(e["record_id"] == "R08" and e["reason"] == "suppressed: duplicate of R07" for e in r["excluded"])
+
+
+def test_duplicate_fix_refuses_when_listings_diverged(conn):
+    from triage import fixes
+    conn.execute("UPDATE records SET rate_cents=rate_cents+100 WHERE id='R08'")
+    with pytest.raises(ValueError, match="no longer match"):
+        fixes.apply_fix(conn, _aid(conn, "R08"))
+
+
+def test_drift_fix_registers_alias_and_clears_the_flag(conn):
+    from triage import fixes
+    aid = _aid(conn, "R04")
+    out = fixes.apply_fix(conn, aid)
+    assert out["alias"] == {"price": "rate"} and out["records_cleared"] == ["R04"]
+    assert fixes.registered_aliases(conn, "HG1", "A") == {"price": "rate"}
+    assert json.loads(conn.execute("SELECT extra_json FROM records WHERE id='R04'").fetchone()[0])["drift"] == {"unexpected": [], "missing": []}
+    assert conn.execute("SELECT status FROM anomalies WHERE id=?", (aid,)).fetchone()[0] == "fixed"
+    audit_row = conn.execute("SELECT * FROM audit WHERE item_id=?", (f"anom:{aid}",)).fetchone()
+    assert audit_row["human_action"] == "approve_and_apply_fix"
+
+
+def test_registered_alias_means_a_resync_no_longer_reports_drift():
+    before = [a for a in rules.detect_all(ingest.load_all()) if a["rule"] == "schema-drift"]
+    after = [a for a in rules.detect_all(ingest.load_all(registered_a={"price": "rate"})) if a["rule"] == "schema-drift"]
+    assert len(before) == 1 and after == []
+    assert next(r for r in ingest.load_all(registered_a={"price": "rate"}) if r["id"] == "R04")["rate_cents"] == 21500
+
+
+def test_drift_fix_refuses_ambiguous_drift(conn):
+    from triage import fixes
+    ev = {"unexpected": ["price", "cost"], "missing": ["rate"]}
+    conn.execute("UPDATE anomalies SET evidence_json=? WHERE record_id='R04'", (json.dumps(ev),))
+    with pytest.raises(ValueError, match="not a single renamed field"):
+        fixes.apply_fix(conn, _aid(conn, "R04"))
+
+
+def test_undo_reverts_state_and_appends_instead_of_deleting(conn):
+    item = _anom(conn, "R03")
+    queue.decide(conn, item["item_id"], "approve")
+    first = conn.execute("SELECT id FROM audit WHERE item_id=?", (item["item_id"],)).fetchone()[0]
+    queue.undo_decision(conn, first)
+    rows = conn.execute("SELECT human_action FROM audit WHERE item_id=? ORDER BY id", (item["item_id"],)).fetchall()
+    assert [r[0] for r in rows] == ["approve", "undo"]
+    assert item["item_id"] in [i["item_id"] for i in queue.build_queue(conn)]
+    queue.decide(conn, item["item_id"], "approve")   # can be decided again
+
+
+def test_undo_refuses_applied_fixes_and_superseded_decisions(conn):
+    from triage import fixes
+    fixes.apply_fix(conn, _aid(conn, "R03"))
+    fix_row = conn.execute("SELECT id FROM audit WHERE human_action='approve_and_apply_fix'").fetchone()[0]
+    with pytest.raises(ValueError):
+        queue.undo_decision(conn, fix_row)
+
+
+def test_old_database_without_new_column_is_migrated(tmp_path, monkeypatch):
+    import sqlite3
+    monkeypatch.setattr(config, "DB_PATH", tmp_path / "old.db")
+    old = sqlite3.connect(config.DB_PATH)
+    old.execute("CREATE TABLE records(id TEXT PRIMARY KEY, hotel_id TEXT, hotel_name TEXT, currency TEXT, city TEXT, source_format TEXT, room_key TEXT, plan_key TEXT, rate_cents INTEGER, public_cents INTEGER, avail INTEGER, updated_at TEXT, view_json TEXT, extra_json TEXT, heldout INTEGER DEFAULT 0)")
+    old.commit(); old.close()
+    c = db.connect()
+    assert "suppressed_reason" in {r[1] for r in c.execute("PRAGMA table_info(records)")}
