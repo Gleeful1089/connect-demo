@@ -33,3 +33,11 @@ def test_screen_2_is_gone(tmp_path, monkeypatch):
     for d in ("money", "search", "buyer"):
         assert not (ROOT / d).exists()
     main._conn = None
+
+
+def test_evaluation_lives_on_its_own_tab():
+    html = (ROOT / "web" / "index.html").read_text()
+    s1 = html[html.index('<div id="s1">'):html.index('<div id="s2"')]
+    s2 = html[html.index('<div id="s2"'):]
+    assert 'id="eval"' not in s1 and 'id="eval"' in s2
+    assert "Workbench" in html and "Evaluation" in html

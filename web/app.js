@@ -20,6 +20,11 @@ function toast(m) { const t = $('toast'); t.textContent = m; t.hidden = false; s
 const guard = (fn) => async (...a) => { try { await fn(...a); } catch (e) { toast(e.message); } };
 
 
+function showTab(n) {
+  $('s1').hidden = n !== 1; $('s2').hidden = n !== 2;
+  $('t1').classList.toggle('on', n === 1); $('t2').classList.toggle('on', n === 2);
+}
+
 let TAXO = [];
 async function loadAll() {
   const [meta, q] = await Promise.all([api('/api/meta'), api('/api/queue')]);

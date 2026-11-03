@@ -43,6 +43,7 @@
   <h1>Connect: onboarding workbench</h1>
   <span class="banner">Synthetic data. Demo only.</span>
   <span id="simflag"></span>
+  <nav><button id="t1" class="on" onclick="showTab(1)">Workbench</button><button id="t2" onclick="showTab(2)">Evaluation (design view)</button></nav>
 </header>
 <div id="toast" class="card err" hidden style="position:fixed;right:16px;bottom:16px;z-index:9;max-width:420px"></div>
 <main>
@@ -61,11 +62,17 @@
   <section><h2>Triage queue (highest priority first)</h2><div id="queue"></div></section>
   <section><h2>Anomaly taxonomy</h2><div id="taxo" class="card"></div></section>
 
-  <section><h2>Evaluation on the held-out set</h2><div id="eval" class="card"></div></section>
   <section><h2>Records</h2><div class="card" style="overflow:auto"><table id="records"></table></div></section>
   <section><h2>Audit trail</h2><div class="card" style="overflow:auto"><table id="audit"></table></div></section>
 </div>
 
+<div id="s2" hidden>
+  <section>
+    <h2>Evaluation on the held-out set</h2>
+    <div class="small mute" style="margin-bottom:8px">Design and backend view. It measures how well the model's mapping proposals match known answers, to choose an auto-confirm threshold. It is not part of the reviewer's workflow, and moving the slider here changes no data.</div>
+    <div id="eval" class="card"></div>
+  </section>
+</div>
 </main>
 <script src="/static/app.js"></script>
 </body>
