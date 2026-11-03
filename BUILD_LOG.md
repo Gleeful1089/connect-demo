@@ -93,3 +93,10 @@ unless an entry says otherwise, because no ANTHROPIC_API_KEY was available durin
   affected your browser earlier is likely but unconfirmed.
 - **Correction:** wrote a concurrency test first (it failed 3 of 3 runs), then serialized API requests with a lock.
   The test now passes 5 of 5 runs. Single-user demo only; a multi-user version needs a connection per request.
+
+## 11. Confidence badge ignored the threshold slider (hardcoded 0.85)
+- **What was wrong:** the green/amber confidence badge on each queue tile compared against a literal 0.85, so tiles at
+  0.85 stayed green with the slider at 0.90.
+- **How detected:** you noticed it in the browser. My Node smoke checks only looked for crashes, not for color logic.
+- **Correction:** the badge now compares against the slider's threshold. Verified under Node at 0.90: both 0.85 tiles
+  render amber. There is still no automated test of UI color logic.

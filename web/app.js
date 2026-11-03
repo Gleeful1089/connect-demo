@@ -51,7 +51,7 @@ function renderQueue(q) {
       : `<label class="small">class <select data-f="class"><option value="">no class (record override only)</option>${TAXO.filter((t) => t.status === 'approved').map((t) => `<option>${esc(t.name)}</option>`).join('')}</select></label>`;
     return `<div class="card" data-id="${esc(it.item_id)}">
       <div class="row"><strong>${esc(it.title)}</strong><span class="pill">priority ${it.priority}</span>
-        <span class="pill ${it.confidence >= 0.85 ? 'ok' : 'warn'}">model confidence ${(+it.confidence).toFixed(2)}</span>
+        <span class="pill ${it.confidence >= q.threshold ? 'ok' : 'warn'}">model confidence ${(+it.confidence).toFixed(2)}</span>
         <span class="small mute">${esc(it.hotel)} | ${esc(it.model_version)}${it.provenance === 'simulated' ? ' (simulated)' : ''}</span></div>
       <div style="margin:6px 0">${proposed}</div>${evidence}
       ${it.rationale ? `<div class="small mute">Model rationale: ${esc(it.rationale)}</div>` : ''}
