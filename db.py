@@ -30,8 +30,6 @@ CREATE TABLE IF NOT EXISTS audit(
 CREATE TABLE IF NOT EXISTS model_calls(
   id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT, task TEXT, model TEXT, source TEXT, provenance TEXT,
   latency_ms INTEGER, prompt_tokens INTEGER, completion_tokens INTEGER);
-CREATE TABLE IF NOT EXISTS bookings(
-  id TEXT PRIMARY KEY, ts TEXT, record_id TEXT, scenario TEXT, payload_json TEXT);
 CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT);
 """
 

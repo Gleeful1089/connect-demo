@@ -52,3 +52,8 @@ Nothing here was approved by anyone. Each assumption is the simplest default tha
     model's original proposal is not modified, so the held-out evaluation is unaffected.
 23. **Other classes have no automatic fix yet.** Candidates: duplicate-availability (suppress, deterministic) and
     schema-drift (add the field alias). Rate outliers, stale data and missing cancellation policies need the hotel.
+
+## Removed 2026-11-03: Screen 2
+Screen 2 (Muse, Connect search, booking, hotel statement) and its money module were deleted at your request. Items 5 to 12
+and 17 above (fee floor, rounding, FX, taxes, Muse request, fictional hotels for booking, demo shortcut) no longer apply.
+The code is recoverable from git history (the commit just before "remove: Screen 2").

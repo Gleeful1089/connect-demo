@@ -1,7 +1,6 @@
-// Single-page UI. All amounts are integer minor units; money is formatted with integer math only.
+// Single-page UI for the onboarding workbench.
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const money = (c, ccy) => { const neg = c < 0; c = Math.abs(c); return `${neg ? '-' : ''}${Math.trunc(c / 100)}.${String(c % 100).padStart(2, '0')} ${ccy}`; };
 const pct = (x) => (x === null || x === undefined ? 'n/a' : `${Math.round(x * 100)}%`);
 const FIELDS = ['category', 'bed', 'view', 'max_occupancy', 'meal_plan', 'cancellation', 'prepaid'];
 const CHOICES = {
@@ -20,11 +19,6 @@ async function api(path, body) {
 function toast(m) { const t = $('toast'); t.textContent = m; t.hidden = false; setTimeout(() => { t.hidden = true; }, 6000); }
 const guard = (fn) => async (...a) => { try { await fn(...a); } catch (e) { toast(e.message); } };
 
-function show(n) {
-  $('s1').hidden = n !== 1; $('s2').hidden = n !== 2;
-  $('t1').classList.toggle('on', n === 1); $('t2').classList.toggle('on', n === 2);
-  if (n === 2 && !$('call').textContent) loadMuse();
-}
 
 let TAXO = [];
 async function loadAll() {
@@ -93,7 +87,7 @@ async function renderRecords() {
   const counts = rows.reduce((a, r) => { a[r.status] = (a[r.status] || 0) + 1; return a; }, {});
   $('counts').textContent = Object.entries(counts).map(([k, v]) => `${v} ${k.replace('_', '-')}`).join(', ');
   $('records').innerHTML = `<tr><th>ID</th><th>Hotel</th><th>Fmt</th><th>Room (raw)</th><th>Plan (raw)</th><th class="n">Rate</th><th>Mapping</th><th class="n">Conf</th><th>Open anomalies</th></tr>` +
-    rows.map((r) => `<tr><td>${r.id}</td><td>${esc(r.hotel)}</td><td>${r.format}</td><td>${esc(r.room)}</td><td>${esc(r.plan)}</td><td class="n">${money(r.rate_cents, r.currency)}</td>
+    rows.map((r) => `<tr><td>${r.id}</td><td>${esc(r.hotel)}</td><td>${r.format}</td><td>${esc(r.room)}</td><td>${esc(r.plan)}</td><td class="n">${(r.rate_cents / 100).toFixed(2)} ${esc(r.currency)}</td>
       <td><span class="pill ${r.status === 'review' ? 'warn' : 'ok'}">${r.status.replace('_', '-')}</span></td><td class="n">${(+r.confidence).toFixed(2)}</td>
       <td>${r.anomalies.map((a) => `<span class="pill bad">${esc(a)}</span>`).join(' ')}</td></tr>`).join('');
 }
@@ -135,53 +129,5 @@ async function renderAudit() {
 
 const setThr = guard(async (v) => { await api('/api/threshold', { threshold: +v }); await loadAll(); });
 const rebuild = guard(async () => { await api('/api/pipeline/run', {}); await loadAll(); });
-
-// ---------------- Screen 2 ----------------
-let REQ = null, LAST = null;
-async function loadMuse() {
-  const m = await api('/api/muse');
-  REQ = m.tool_call.arguments;
-  $('muse').innerHTML = `<em>"${esc(m.request_text)}"</em>`;
-  $('call').textContent = JSON.stringify(m.tool_call, null, 2);
-}
-const runSearch = guard(async () => {
-  if (!REQ) await loadMuse();
-  LAST = await api('/api/connect/search', REQ);
-  $('book').hidden = true;
-  const o = LAST.offers;
-  $('resp').innerHTML = `<div class="small mute">${LAST.nights} nights, party of ${LAST.party_size}. ${o.length} ranked matches, ${LAST.excluded.length} records excluded.</div>` +
-    (o.length ? o.map((x) => `<div class="card"><div class="row"><strong>#${x.rank} ${esc(x.hotel)}</strong><span class="pill">${esc(x.offer_id)}</span></div>
-      <div class="small">${esc(x.room.category)}, ${esc(x.room.bed)} bed, ${esc(x.room.view)} view, sleeps ${x.room.max_occupancy}. ${esc(x.rate_plan.meal_plan)}, ${esc(x.cancellation_terms)}${x.rate_plan.prepaid ? ', prepaid' : ''}.</div>
-      <table>${x.price.lines.map((l) => `<tr><td>${esc(l.label)}</td><td class="n">${money(l.amount_cents, l.currency)}</td></tr>`).join('')}</table>
-      <div class="row" style="margin-top:6px"><button class="act" onclick="bookOffer('${esc(x.offer_id)}')">Book</button></div></div>`).join('')
-      : '<div class="card mute">No confirmed inventory matches. Confirm mappings on Screen 1 or use the demo shortcut above.</div>') +
-    `<details><summary class="small">Exclusion reasons</summary><table>${LAST.excluded.map((e) => `<tr><td>${esc(e.record_id)}</td><td>${esc(e.room)}</td><td>${esc(e.reason)}</td></tr>`).join('')}</table></details>
-     <details><summary class="small">Raw JSON response</summary><pre>${esc(JSON.stringify(LAST, null, 2))}</pre></details>`;
-});
-const approveAll = guard(async () => { const r = await api('/api/demo/approve-all-review', {}); $('s2msg').textContent = `Approved ${r.approved} items (audited as demo-shortcut). ${r.skipped.length} skipped.`; await loadAll(); await runSearch(); });
-
-const bookOffer = guard(async (id) => {
-  $('book').hidden = false;
-  $('book').innerHTML = `<h2>Booking ${esc(id)}</h2><div class="row"><span class="mute">Scenario</span>
-    ${[['completed', 'Completed stay'], ['cancelled_no_charge', 'Cancelled, no charge'], ['cancelled_retained', 'Cancelled, first night retained']].map(([k, l]) => `<button class="alt" onclick="statement('${esc(id)}','${k}')">${l}</button>`).join('')}
-    </div><div id="stmt"></div>`;
-  await statement(id, 'completed');
-});
-const statement = guard(async (id, scenario) => {
-  const b = await api('/api/connect/book', { offer_id: id, request: REQ, scenario });
-  const s = b.statement, f = s.fee, card = s.virtual_card, h = s.hotel_currency, by = s.buyer_currency;
-  $('stmt').innerHTML = `<div class="grid3" style="margin-top:10px">
-    <div class="card"><h2>Buyer price and virtual card</h2><table>${b.offer.price.lines.map((l) => `<tr><td>${esc(l.label)}</td><td class="n">${money(l.amount_cents, l.currency)}</td></tr>`).join('')}</table>
-      <div class="small" style="margin-top:6px">Single-use virtual card (simulated): ${esc(card.card_id)}<br>${esc(card.display)}<br>Limit ${money(card.limit_cents, by)} (exact total)<br>Status ${esc(card.status)}, captured ${money(card.captured_cents, by)}</div></div>
-    <div class="card"><h2>Hotel statement: ${esc(scenario.replace(/_/g, ' '))}</h2><table>
-      <tr><td>Pre-tax net rate (${s.nights} nights)</td><td class="n">${money(s.pre_tax_net_rate_cents, h)}</td></tr>
-      ${s.retained_cents ? `<tr><td>Retained cancellation charge</td><td class="n">${money(s.retained_cents, h)}</td></tr>` : ''}
-      <tr><td>Fee base</td><td class="n">${money(f.base_cents, h)}</td></tr>
-      <tr><td>Platform fee (${esc(f.rule)})</td><td class="n">-${money(f.fee_cents, h)}</td></tr>
-      <tr><th>Net payout to hotel</th><th class="n">${money(s.hotel_net_payout_cents, h)}</th></tr></table>
-      <div class="small mute" style="margin-top:6px">Fee is 3% of the pre-tax net rate with a per-booking floor (placeholder, configurable). ${esc(s.note)}</div></div>
-    <div class="card"><h2>Ledger</h2><table>${s.ledger.map((e) => `<tr><td>${esc(e.account)}</td><td class="n">${money(e.amount_cents, e.currency)}</td></tr>`).join('')}</table>
-      <div class="small mute" style="margin-top:6px">Integer minor units. No LLM is imported by the fee, pricing or ledger code, and a test enforces it.</div></div></div>`;
-});
 
 loadAll().catch((e) => { document.body.insertAdjacentHTML('afterbegin', `<div class="card err">Failed to load: ${esc(e.message)}</div>`); });

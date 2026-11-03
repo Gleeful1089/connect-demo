@@ -37,5 +37,3 @@ PLAYBOOK = {
 }
 DEFAULT_PLAYBOOK = ("Route to onboarding lead for review.", 3, False)
 
-# After a human resolves an anomaly of these classes the record stays out of search (suppressed / detached).
-SUPPRESS_ON_RESOLVE = {"duplicate-availability", "rate-plan-on-wrong-room"}

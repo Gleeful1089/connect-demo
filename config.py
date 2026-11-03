@@ -1,4 +1,4 @@
-"""Single place for model tiers, thresholds and money parameters. Synthetic data. Demo only."""
+"""Single place for model tiers and thresholds. Synthetic data. Demo only."""
 import os
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -38,8 +38,3 @@ IQR_K = 1.5
 IQR_MIN = 0.06                        # floor on the IQR so tight peer groups do not over-flag
 MIN_PEERS = 4
 
-# Money (placeholders, configurable)
-FEE_RATE = Decimal("0.03")
-FEE_FLOOR_CENTS = {"USD": 500, "EUR": 500}
-FX_MARGIN = Decimal("0.015")
-FX_RATES = {("EUR", "USD"): Decimal("1.0900"), ("USD", "EUR"): Decimal("0.9174")}  # synthetic mid rates

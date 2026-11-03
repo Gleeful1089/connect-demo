@@ -40,10 +40,9 @@
 </head>
 <body>
 <header>
-  <h1>Connect: AI on messy data, code on money</h1>
+  <h1>Connect: onboarding workbench</h1>
   <span class="banner">Synthetic data. Demo only.</span>
   <span id="simflag"></span>
-  <nav><button id="t1" class="on" onclick="show(1)">Screen 1: Onboarding workbench</button><button id="t2" onclick="show(2)">Screen 2: Booking and statement</button></nav>
 </header>
 <div id="toast" class="card err" hidden style="position:fixed;right:16px;bottom:16px;z-index:9;max-width:420px"></div>
 <main>
@@ -67,21 +66,6 @@
   <section><h2>Audit trail</h2><div class="card" style="overflow:auto"><table id="audit"></table></div></section>
 </div>
 
-<div id="s2" hidden>
-  <div class="card row">
-    <button class="act" onclick="runSearch()">Run Muse request</button>
-    <button class="alt" onclick="approveAll()">Demo shortcut: approve all pending review items</button>
-    <span id="s2msg" class="mute small"></span>
-  </div>
-  <div class="grid3">
-    <div class="card"><h2>(a) Muse (mock buyer agent)</h2><span class="tag">BUYER AGENT's job</span>
-      <p id="muse"></p><div class="small mute">Turning this sentence into a structured request is done by the buyer's agent. Connect never receives the sentence.</div></div>
-    <div class="card"><h2>(b) Structured API call</h2><span class="tag">BUYER AGENT output</span><pre id="call"></pre></div>
-    <div class="card"><h2>(c) Connect response</h2><span class="tag" style="color:var(--ok);border-color:var(--ok)">Deterministic. No LLM.</span>
-      <div id="resp"></div></div>
-  </div>
-  <section class="card" id="book" hidden></section>
-</div>
 </main>
 <script src="/static/app.js"></script>
 </body>

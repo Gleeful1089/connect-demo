@@ -1,4 +1,4 @@
-"""FastAPI app. Screen 1 (onboarding workbench) and Screen 2 (booking and statement). Synthetic data. Demo only."""
+"""FastAPI app for the onboarding workbench. Synthetic data. Demo only."""
 from __future__ import annotations
 
 import json
@@ -147,11 +147,6 @@ def model_calls():
     return [dict(r) for r in conn().execute("SELECT task, model, source, provenance, COUNT(*) n FROM model_calls GROUP BY 1,2,3,4")]
 
 
-try:  # Screen 2 routes, added after Screen 1 is tested
-    from api.screen2 import router as screen2_router
-    app.include_router(screen2_router)
-except ImportError:
-    pass
 
 
 @app.get("/")

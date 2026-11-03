@@ -190,16 +190,14 @@ def test_threshold_change_does_not_undo_a_fixed_mapping(conn):
     assert conn.execute("SELECT status FROM mappings WHERE record_id='R03'").fetchone()[0] == "review"
 
 
-def test_fixed_record_becomes_searchable_once_remapped_and_confirmed(conn):
-    from buyer import muse
-    from search import connect_search as cs
+def test_fixed_record_mapping_is_reconfirmed_with_the_new_room_attributes(conn):
     from triage import fixes
     fixes.apply_fix(conn, int(_anom(conn, "R03")["item_id"].split(":")[1]))
-    assert "R03" not in [o["offer_id"] for o in cs.search(conn, muse.STRUCTURED_REQUEST)["offers"]]  # mapping unconfirmed
+    item = next(i for i in queue.build_queue(conn) if i["item_id"] == "map:R03")
+    assert item["proposed"]["max_occupancy"] == 5 and item["proposed"]["category"] == "family"   # queue shows the corrected mapping
     queue.decide(conn, "map:R03", "approve")
-    offers = cs.search(conn, muse.STRUCTURED_REQUEST)["offers"]
-    o = next(o for o in offers if o["offer_id"] == "R03")
-    assert o["room"]["max_occupancy"] == 5 and o["rate_plan"]["meal_plan"] == "half_board"
+    m = conn.execute("SELECT status, final_json FROM mappings WHERE record_id='R03'").fetchone()
+    assert m["status"] == "confirmed" and json.loads(m["final_json"])["meal_plan"] == "half_board"
 
 
 def test_fix_cannot_run_twice_or_on_unfixable_classes(conn):
@@ -239,17 +237,12 @@ def _aid(conn, rid):
 
 
 def test_duplicate_fix_suppresses_the_copy_and_keeps_the_original(conn):
-    from buyer import muse
-    from search import connect_search as cs
     from triage import fixes
     fixes.apply_fix(conn, _aid(conn, "R08"))
     assert conn.execute("SELECT suppressed_reason FROM records WHERE id='R08'").fetchone()[0] == "duplicate of R07"
     assert conn.execute("SELECT suppressed_reason FROM records WHERE id='R07'").fetchone()[0] is None
-    r = cs.search(conn, muse.STRUCTURED_REQUEST)
-    ids = [o["offer_id"] for o in r["offers"]]
-    assert "R08" not in ids and "R07" in ids
-    assert any(e["record_id"] == "R08" and e["reason"] == "suppressed: duplicate of R07" for e in r["excluded"])
-
+    row = conn.execute("SELECT * FROM audit WHERE human_action='approve_and_apply_fix'").fetchone()
+    assert "duplicate of R07" in row["final"]
 
 def test_duplicate_fix_refuses_when_listings_diverged(conn):
     from triage import fixes
