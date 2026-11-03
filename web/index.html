@@ -46,7 +46,7 @@
   <span class="banner">Synthetic data. Demo only.</span>
   <span id="simflag"></span>
   <span id="sandbox"></span>
-  <nav><button id="t0" onclick="showTab(0)">About</button><button id="t1" onclick="showTab(1)">Workbench</button><button id="t2" onclick="showTab(2)">Evaluation (design view)</button></nav>
+  <nav><button id="t0" onclick="showTab(0)">About</button><button id="t1" onclick="showTab(1)">Workbench</button></nav>
 </header>
 <div id="toast" class="card err" hidden style="position:fixed;right:16px;bottom:16px;z-index:9;max-width:420px"></div>
 <main>
@@ -65,7 +65,7 @@
           <li>Anomaly classification into the cross-vendor taxonomy, where detection is statistical and rule-based and the model only classifies what the rules found. The model may also propose a new class, which a human approves.</li>
           <li>Exception triage, meaning a prioritized queue with a proposed fix from a class-level playbook, which a human approves.</li>
         </ul></li>
-      <li><strong>The guardrails in that same section:</strong> confidence thresholds (the slider), an audit trail on every AI decision, a held-out evaluation set (the Evaluation tab), and the human-override record.</li>
+      <li><strong>The guardrails in that same section:</strong> confidence thresholds (the slider), an audit trail on every AI decision, and the human-override record.</li>
       <li><strong>"A cross-vendor anomaly taxonomy" as a moat:</strong> vendor and chain are tags, not classes. The taxonomy is the asset the memo says gets better with every property.</li>
     </ul>
 
@@ -75,6 +75,8 @@
       <li>A human stays in the loop, and each decision becomes labeled data (the audit table).</li>
       <li>Wherever the fix is a plain rule, it is code, not a model (the three deterministic fixes).</li>
     </ul>
+    <h3>How the model was assessed</h3>
+    <p>During development, the model's mapping proposals were scored for precision (the share of auto-confirmed mappings that were correct) and recall (the share of correct mappings that were auto-confirmed) against 8 held-out records with known answers, which the model never saw. The auto-confirm threshold is adjustable: raising it sends more mappings to human review and lowers the risk that a wrong one slips through, and lowering it does the reverse.</p>
     <p class="mute small">About the model output: the proposals and classifications you see were produced once by a Claude model (Haiku tier) on this synthetic data and recorded. This site replays them and makes no live model calls.</p>
   </section>
 
@@ -108,8 +110,6 @@
       <tr><td><strong>Reset my sandbox</strong></td><td>Puts your own copy of the data back to the start. It does not affect anyone else.</td></tr>
     </table>
 
-    <h3>The Evaluation tab</h3>
-    <p>This is the design and backend view. It scores the model's mapping proposals against known answers for 8 held-out records, and shows precision and recall at each threshold, so the auto-confirm threshold can be chosen with evidence. Its slider shows a what-if only and changes no data. With only 8 records, one record moves a number by 12 points or more.</p>
     <p><button class="act" onclick="showTab(1)">Start with the workbench</button></p>
   </section>
 </div>
@@ -133,13 +133,6 @@
   <section><h2>Audit trail</h2><div class="card" style="overflow:auto"><table id="audit"></table></div></section>
 </div>
 
-<div id="s2" hidden>
-  <section>
-    <h2>Evaluation on the held-out set</h2>
-    <div class="small mute" style="margin-bottom:8px">Design and backend view. It measures how well the model's mapping proposals match known answers, to choose an auto-confirm threshold. It is not part of the reviewer's workflow, and moving the slider here changes no data.</div>
-    <div id="eval" class="card"></div>
-  </section>
-</div>
 </main>
 <script src="/static/app.js"></script>
 </body>

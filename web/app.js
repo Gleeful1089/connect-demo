@@ -21,12 +21,12 @@ const guard = (fn) => async (...a) => { try { await fn(...a); } catch (e) { toas
 
 
 function showTab(n) {
-  for (const i of [0, 1, 2]) { $('s' + i).hidden = n !== i; $('t' + i).classList.toggle('on', n === i); }
+  for (const i of [0, 1]) { $('s' + i).hidden = n !== i; $('t' + i).classList.toggle('on', n === i); }
   try { localStorage.setItem('tab', String(n)); } catch (e) { /* storage may be blocked; the tab is a convenience */ }
   window.scrollTo(0, 0);
 }
 let startTab = 0;   // first visit lands on About; afterwards the last tab used
-try { const t = localStorage.getItem('tab'); if (t !== null) startTab = Math.min(2, Math.max(0, +t || 0)); } catch (e) { startTab = 0; }
+try { const t = localStorage.getItem('tab'); if (t !== null) startTab = Math.min(1, Math.max(0, +t || 0)); } catch (e) { startTab = 0; }
 showTab(startTab);
 
 let TAXO = [];
@@ -39,7 +39,7 @@ async function loadAll() {
   if (meta.sandbox) $('sandbox').innerHTML = `<span class="pill" title="Your own copy of the data. Nothing you do here is visible to other users, and it is removed after ${meta.sandbox.ttl_days} days of inactivity.">Personal sandbox ${esc(meta.sandbox.id)}</span>`;
   $('thr').value = q.threshold; $('thrLabel').textContent = (+q.threshold).toFixed(2);
   renderQueue(q); renderTaxo(q.taxonomy);
-  await Promise.all([renderRecords(), renderEval(q.threshold), renderAudit()]);
+  await Promise.all([renderRecords(), renderAudit()]);
 }
 
 function renderQueue(q) {
@@ -102,33 +102,6 @@ async function renderRecords() {
       <td>${r.anomalies.map((a) => `<span class="pill bad">${esc(a)}</span>`).join(' ')}</td></tr>`).join('');
 }
 
-let EVAL_T = null;
-async function renderEval(t) {
-  EVAL_T = t;
-  const ev = await api(`/api/eval?threshold=${t}`);
-  const cur = ev.current;
-  const simNote = ev.provenance.includes('simulated')
-    ? '<div class="small" style="color:var(--sim)">These numbers score a keyword-heuristic stand-in, not a language model. They show the mechanics of the panel. Record real outputs with an API key to measure a model.</div>' : '';
-  $('eval').innerHTML = `${simNote}
-    <div class="row"><strong>Threshold</strong><input type="range" min="0.5" max="1" step="0.05" value="${t}" style="width:220px" oninput="evalLabel.textContent=(+this.value).toFixed(2)" onchange="renderEval(+this.value)"><span id="evalLabel" class="pill">${(+t).toFixed(2)}</span></div>
-    <div class="row" style="margin:8px 0"><span class="pill ok">precision ${pct(cur.precision)} (${Math.round((cur.precision ?? 0) * cur.n_auto)}/${cur.n_auto} auto-confirmed)</span>
-      <span class="pill">recall ${pct(cur.recall)}</span><span class="pill">coverage ${pct(cur.coverage)} (${cur.n_auto}/${cur.n_total})</span></div>
-    <div class="small mute">Computed only on the ${ev.n_heldout} held-out records. Correct = all 7 canonical fields match the label. Precision = correct among auto-confirmed. Recall = correct and auto-confirmed over all correct proposals. With n=${ev.n_heldout}, one record moves a number by 12 points or more.</div>
-    ${curveSvg(ev.curve, t)}
-    <table><tr><th>Threshold</th><th class="n">Auto-confirmed</th><th class="n">Precision</th><th class="n">Recall</th><th class="n">Coverage</th></tr>${ev.curve.map((c) => `<tr class="${Math.abs(c.threshold - t) < 0.001 ? 'hl' : ''}"><td>${c.threshold.toFixed(2)}</td><td class="n">${c.n_auto}/${c.n_total}</td><td class="n">${pct(c.precision)}</td><td class="n">${pct(c.recall)}</td><td class="n">${pct(c.coverage)}</td></tr>`).join('')}</table>
-    <h2 style="margin-top:12px">Held-out records</h2>
-    <table><tr><th>ID</th><th class="n">Confidence</th><th>Result</th><th>Wrong fields</th></tr>${ev.records.map((r) => `<tr><td>${r.record_id}</td><td class="n">${r.confidence.toFixed(2)}</td><td><span class="pill ${r.correct ? 'ok' : 'bad'}">${r.correct ? 'correct' : 'wrong'}</span></td><td>${r.wrong_fields.map((f) => `${esc(f)}: proposed ${esc(r.proposed[f])}, label ${esc(r.truth[f])}`).join('; ')}</td></tr>`).join('')}</table>
-    <div class="small" style="margin-top:8px">Anomaly classification on held-out anomalies: ${ev.classification.correct}/${ev.classification.expected} correct (${pct(ev.classification.accuracy)}).</div>`;
-}
-function curveSvg(curve, t) {
-  const W = 360, H = 120, x = (v) => 30 + ((v - 0.5) / 0.5) * (W - 40), y = (v) => H - 20 - v * (H - 40);
-  const line = (key, color) => curve.filter((c) => c[key] !== null).map((c, i) => `${i ? 'L' : 'M'}${x(c.threshold).toFixed(1)},${y(c[key]).toFixed(1)}`).join(' ');
-  return `<svg viewBox="0 0 ${W} ${H}" style="max-width:420px;width:100%" role="img" aria-label="Precision and recall by threshold">
-    <path d="${line('precision')}" fill="none" stroke="var(--ok)" stroke-width="2"/><path d="${line('recall')}" fill="none" stroke="var(--acc)" stroke-width="2"/>
-    <line x1="${x(t)}" x2="${x(t)}" y1="10" y2="${H - 20}" stroke="var(--mute)" stroke-dasharray="3"/>
-    <text x="30" y="${H - 4}" font-size="10" fill="var(--mute)">0.5</text><text x="${W - 22}" y="${H - 4}" font-size="10" fill="var(--mute)">1.0</text>
-    <text x="36" y="12" font-size="10" fill="var(--ok)">precision</text><text x="90" y="12" font-size="10" fill="var(--acc)">recall</text></svg>`;
-}
 
 async function renderAudit() {
   const rows = await api('/api/audit');

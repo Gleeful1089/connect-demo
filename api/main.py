@@ -19,7 +19,6 @@ import db
 import llm
 import pipeline
 import sandbox
-from evaluation import heldout
 from triage import fixes, queue
 
 WEB = Path(__file__).resolve().parent.parent / "web"
@@ -162,11 +161,6 @@ def set_threshold(t: Threshold, request: Request):
         raise HTTPException(400, "threshold must be between 0 and 1")
     pipeline.set_threshold(C(request), t.threshold)
     return {"ok": True}
-
-
-@api.get("/eval")
-def evaluation(request: Request, threshold: float | None = None):
-    return heldout.evaluate(C(request), _threshold(request) if threshold is None else threshold)
 
 
 @api.get("/audit")

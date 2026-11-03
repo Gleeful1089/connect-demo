@@ -120,7 +120,7 @@ def test_concurrent_requests_in_one_sandbox_and_across_sandboxes(app):
     clients = [visitor(app) for _ in range(4)]
     for c in clients:
         c.get("/api/meta")
-    paths = ["/api/queue", "/api/records", "/api/eval?threshold=0.85", "/api/audit", "/api/meta"] * 12
+    paths = ["/api/queue", "/api/records", "/api/audit", "/api/meta"] * 12
     jobs = [(c, p) for c in clients for p in paths]
     with ThreadPoolExecutor(max_workers=12) as ex:
         codes = list(ex.map(lambda j: j[0].get(j[1]).status_code, jobs))
@@ -140,10 +140,9 @@ def test_building_a_sandbox_makes_no_live_model_calls(app, monkeypatch):
     assert visitor(app).get("/api/queue").status_code == 200
 
 
-def test_app_endpoints_and_evaluation(app):
+def test_app_endpoints(app):
     c = visitor(app)
     assert c.get("/api/meta").json()["simulated"] is True
-    assert c.get("/api/eval?threshold=0.85").json()["n_heldout"] == 8
     assert c.post("/api/threshold", json={"threshold": 2}).status_code == 400
     assert c.get("/").status_code == 200
 
@@ -158,20 +157,21 @@ def test_screen_2_is_gone(app):
         assert not (ROOT / d).exists()
 
 
-def test_evaluation_lives_on_its_own_tab():
+def test_evaluation_is_not_part_of_the_app():
     html = (ROOT / "web" / "index.html").read_text()
-    s1 = html[html.index('<div id="s1"'):html.index('<div id="s2"')]
-    s2 = html[html.index('<div id="s2"'):]
-    assert 'id="eval"' not in s1 and 'id="eval"' in s2
+    js = (ROOT / "web" / "app.js").read_text()
+    assert 'id="eval"' not in html and 'id="t2"' not in html and "renderEval" not in js
+    assert "Evaluation" not in html                                   # no tab, no section, no mention
+    assert "/api/eval" not in js
 
 
 def test_about_tab_gives_context_and_a_guide():
     html = (ROOT / "web" / "index.html").read_text()
     s0 = html[html.index('<div id="s0">'):html.index('<div id="s1"')]
     for needle in ("AI-assisted supply onboarding", "Mapping and normalization", "Quick guide", "Approve and apply fix",
-                   "Override", "Auto-confirm threshold", "Reset my sandbox", "Evaluation tab", "synthetic"):
+                   "Override", "Auto-confirm threshold", "Reset my sandbox", "How the model was assessed", "precision", "recall", "synthetic"):
         assert needle in s0, needle
-    assert [html.index(f'id="t{i}"') for i in (0, 1, 2)] == sorted(html.index(f'id="t{i}"') for i in (0, 1, 2))
+    assert html.index('id="t0"') < html.index('id="t1"')
     assert "\u2014" not in html and "\u2013" not in html          # no em or en dashes in user-facing copy
 
 
@@ -181,3 +181,14 @@ def test_guide_names_only_buttons_that_exist():
     for label in ("Approve and apply fix", "Approve without applying", "Override", "Approve class"):
         assert label in js or label in html, label
     assert "Reset my sandbox" in html
+
+
+def test_eval_route_is_gone(app):
+    assert visitor(app).get("/api/eval").status_code == 404
+
+
+def test_assessment_blurb_is_two_sentences():
+    import re
+    html = (ROOT / "web" / "index.html").read_text()
+    body = re.search(r"<h3>How the model was assessed</h3>\s*<p>(.*?)</p>", html, re.S).group(1)
+    assert len(re.findall(r"[.!?](?:\s|$)", body)) == 2, body

@@ -18,5 +18,8 @@ fixtures:
 	$(PY) scripts/author_fixtures.py
 
 # Needs ANTHROPIC_API_KEY. Replaces simulated fixtures with real model output.
+evaluate:
+	$(PY) scripts/evaluate.py
+
 record:
 	$(PY) scripts/record.py

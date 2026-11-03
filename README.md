@@ -18,7 +18,7 @@ Offline by default: every model call has a cached fixture. With no ANTHROPIC_API
 - `data/` synthetic inputs (format A nested JSON, format B flat CSV) and the 8 held-out labels (read by `evaluation/` only)
 - `mapping/` model proposes canonical fields and a confidence; `detect/` statistical and rule-based anomaly detection, no LLM
 - `triage/` model classifies anomalies, class playbook, queue, audit trail, and deterministic fixes (`fixes.py`, no LLM)
-- `evaluation/` precision and recall on the held-out set only
+- `evaluation/` precision and recall on the held-out set only; a development tool (`make evaluate`), not part of the web app
 - `llm.py` the single model entry point with the fixture fallback
 
 See BUILD_LOG.md for what went wrong and QUESTIONS.md for assumptions.
