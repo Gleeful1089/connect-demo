@@ -38,7 +38,6 @@ because this instruction superseded the brief's "Screen 1 first, then wait".
 7 of 8 held-out records fully correct, with the same single miss as the simulated run (prepaid on a non-refundable
 rate); the model's confidence on every held-out record was 0.60 to 0.80, so the default 0.85 threshold auto-confirmed
 none of them. I left the default alone on purpose, since choosing it from 8 records would be fitting to the test set.
-Open question: what the default should be.
 
 **D5. Asked what a queue tile actually means.** Chris, looking at the first tile: "what was the raw data, what was the
 analysis (deterministic, rule-based, agentic), and how was the information in the tile populated? ... I don't know what
