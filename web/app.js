@@ -1,0 +1,180 @@
+// Single-page UI. All amounts are integer minor units; money is formatted with integer math only.
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const money = (c, ccy) => { const neg = c < 0; c = Math.abs(c); return `${neg ? '-' : ''}${Math.trunc(c / 100)}.${String(c % 100).padStart(2, '0')} ${ccy}`; };
+const pct = (x) => (x === null || x === undefined ? 'n/a' : `${Math.round(x * 100)}%`);
+const FIELDS = ['category', 'bed', 'view', 'max_occupancy', 'meal_plan', 'cancellation', 'prepaid'];
+const CHOICES = {
+  category: ['standard', 'superior', 'deluxe', 'suite', 'family'], bed: ['king', 'queen', 'twin', 'two_queens', 'double', 'unspecified'],
+  view: ['city', 'ocean', 'garden', 'lake', 'none'], meal_plan: ['room_only', 'breakfast', 'half_board'],
+  cancellation: ['free_48h', 'free_24h', 'non_refundable', 'unspecified'], prepaid: ['true', 'false'],
+  max_occupancy: ['1', '2', '3', '4', '5', '6', '7', '8'],
+};
+
+async function api(path, body) {
+  const res = await fetch(path, body === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.detail || res.statusText);
+  return data;
+}
+function toast(m) { const t = $('toast'); t.textContent = m; t.hidden = false; setTimeout(() => { t.hidden = true; }, 6000); }
+const guard = (fn) => async (...a) => { try { await fn(...a); } catch (e) { toast(e.message); } };
+
+function show(n) {
+  $('s1').hidden = n !== 1; $('s2').hidden = n !== 2;
+  $('t1').classList.toggle('on', n === 1); $('t2').classList.toggle('on', n === 2);
+  if (n === 2 && !$('call').textContent) loadMuse();
+}
+
+let TAXO = [];
+async function loadAll() {
+  const [meta, q] = await Promise.all([api('/api/meta'), api('/api/queue')]);
+  TAXO = q.taxonomy;
+  $('simflag').innerHTML = meta.simulated
+    ? '<span class="sim" title="No ANTHROPIC_API_KEY. Model outputs come from a keyword heuristic, not a language model.">Simulated model outputs (offline fixtures)</span>'
+    : `<span class="sim">${esc(meta.llm_mode)} model</span>`;
+  $('thr').value = q.threshold; $('thrLabel').textContent = (+q.threshold).toFixed(2);
+  renderQueue(q); renderTaxo(q.taxonomy);
+  await Promise.all([renderRecords(), renderEval(q.threshold), renderAudit()]);
+}
+
+function renderQueue(q) {
+  const el = $('queue');
+  if (!q.items.length) { el.innerHTML = '<div class="card mute">Queue is empty.</div>'; return; }
+  el.innerHTML = q.items.map((it) => {
+    const pending = it.new_class_pending;
+    const proposed = it.kind === 'mapping'
+      ? FIELDS.map((f) => `<span class="pill">${f}: ${esc(it.proposed[f])}</span>`).join(' ')
+      : `<span class="pill ${pending ? 'warn' : ''}">class: ${esc(it.proposed.class ?? 'unclassified')}${pending ? ' (new, needs approval)' : ''}</span>`;
+    const evidence = it.kind === 'anomaly' ? `<div class="small mute">Rule: ${esc(it.rule)}. Evidence: ${esc(JSON.stringify(it.evidence))}</div>` : '';
+    const override = it.kind === 'mapping'
+      ? FIELDS.map((f) => `<label class="small">${f} <select data-f="${f}"><option value="">keep</option>${CHOICES[f].map((v) => `<option>${v}</option>`).join('')}</select></label>`).join(' ')
+      : `<label class="small">class <select data-f="class"><option value="">keep</option>${TAXO.filter((t) => t.status === 'approved').map((t) => `<option>${esc(t.name)}</option>`).join('')}</select></label>`;
+    return `<div class="card" data-id="${esc(it.item_id)}">
+      <div class="row"><strong>${esc(it.title)}</strong><span class="pill">priority ${it.priority}</span>
+        <span class="pill ${it.confidence >= 0.85 ? 'ok' : 'warn'}">model confidence ${(+it.confidence).toFixed(2)}</span>
+        <span class="small mute">${esc(it.hotel)} | ${esc(it.model_version)}${it.provenance === 'simulated' ? ' (simulated)' : ''}</span></div>
+      <div style="margin:6px 0">${proposed}</div>${evidence}
+      ${it.rationale ? `<div class="small mute">Model rationale: ${esc(it.rationale)}</div>` : ''}
+      <div class="small"><strong>Proposed fix (class playbook):</strong> ${esc(it.fix)}</div>
+      ${it.note ? `<div class="small err">Parse note: ${esc(it.note)}</div>` : ''}
+      <div class="row" style="margin-top:8px">${override}
+        <input class="note" placeholder="note (optional)" style="flex:1;min-width:140px">
+        <button class="act" onclick="decide('${esc(it.item_id)}','approve')">Approve</button>
+        <button class="alt" onclick="decide('${esc(it.item_id)}','override')">Override</button></div></div>`;
+  }).join('');
+}
+
+const decide = guard(async (id, action) => {
+  const card = document.querySelector(`[data-id="${CSS.escape(id)}"]`);
+  const override = {};
+  card.querySelectorAll('select').forEach((s) => { if (s.value) override[s.dataset.f] = s.dataset.f === 'prepaid' ? s.value === 'true' : (s.dataset.f === 'max_occupancy' ? +s.value : s.value); });
+  await api(`/api/queue/${encodeURIComponent(id)}/decide`, { action, override: action === 'override' ? override : null, note: card.querySelector('.note').value });
+  await loadAll();
+});
+
+function renderTaxo(rows) {
+  $('taxo').innerHTML = `<table><tr><th>Class</th><th>Description</th><th>Status</th><th></th></tr>${rows.map((t) => `<tr><td>${esc(t.name)}</td><td>${esc(t.description)}</td>
+    <td><span class="pill ${t.status === 'approved' ? 'ok' : t.status === 'proposed' ? 'warn' : 'bad'}">${esc(t.status)}</span></td>
+    <td>${t.status === 'proposed' ? `<button class="act" onclick="classDecision('${esc(t.name)}',true)">Approve class</button> <button class="alt" onclick="classDecision('${esc(t.name)}',false)">Reject</button>` : ''}</td></tr>`).join('')}</table>
+    <div class="small mute" style="margin-top:6px">Vendor and chain are metadata tags on an anomaly. They are never part of a class. The model may propose a class, but only a human can approve it.</div>`;
+}
+const classDecision = guard(async (name, approve) => { await api(`/api/taxonomy/${encodeURIComponent(name)}`, { approve }); await loadAll(); });
+
+async function renderRecords() {
+  const rows = await api('/api/records');
+  const counts = rows.reduce((a, r) => { a[r.status] = (a[r.status] || 0) + 1; return a; }, {});
+  $('counts').textContent = Object.entries(counts).map(([k, v]) => `${v} ${k.replace('_', '-')}`).join(', ');
+  $('records').innerHTML = `<tr><th>ID</th><th>Hotel</th><th>Fmt</th><th>Room (raw)</th><th>Plan (raw)</th><th class="n">Rate</th><th>Mapping</th><th class="n">Conf</th><th>Open anomalies</th></tr>` +
+    rows.map((r) => `<tr><td>${r.id}</td><td>${esc(r.hotel)}</td><td>${r.format}</td><td>${esc(r.room)}</td><td>${esc(r.plan)}</td><td class="n">${money(r.rate_cents, r.currency)}</td>
+      <td><span class="pill ${r.status === 'review' ? 'warn' : 'ok'}">${r.status.replace('_', '-')}</span></td><td class="n">${(+r.confidence).toFixed(2)}</td>
+      <td>${r.anomalies.map((a) => `<span class="pill bad">${esc(a)}</span>`).join(' ')}</td></tr>`).join('');
+}
+
+let EVAL_T = null;
+async function renderEval(t) {
+  EVAL_T = t;
+  const ev = await api(`/api/eval?threshold=${t}`);
+  const cur = ev.current;
+  const simNote = ev.provenance.includes('simulated')
+    ? '<div class="small" style="color:var(--sim)">These numbers score a keyword-heuristic stand-in, not a language model. They show the mechanics of the panel. Record real outputs with an API key to measure a model.</div>' : '';
+  $('eval').innerHTML = `${simNote}
+    <div class="row"><strong>Threshold</strong><input type="range" min="0.5" max="1" step="0.05" value="${t}" style="width:220px" oninput="evalLabel.textContent=(+this.value).toFixed(2)" onchange="renderEval(+this.value)"><span id="evalLabel" class="pill">${(+t).toFixed(2)}</span></div>
+    <div class="row" style="margin:8px 0"><span class="pill ok">precision ${pct(cur.precision)} (${Math.round((cur.precision ?? 0) * cur.n_auto)}/${cur.n_auto} auto-confirmed)</span>
+      <span class="pill">recall ${pct(cur.recall)}</span><span class="pill">coverage ${pct(cur.coverage)} (${cur.n_auto}/${cur.n_total})</span></div>
+    <div class="small mute">Computed only on the ${ev.n_heldout} held-out records. Correct = all 7 canonical fields match the label. Precision = correct among auto-confirmed. Recall = correct and auto-confirmed over all correct proposals. With n=${ev.n_heldout}, one record moves a number by 12 points or more.</div>
+    ${curveSvg(ev.curve, t)}
+    <table><tr><th>Threshold</th><th class="n">Auto-confirmed</th><th class="n">Precision</th><th class="n">Recall</th><th class="n">Coverage</th></tr>${ev.curve.map((c) => `<tr class="${Math.abs(c.threshold - t) < 0.001 ? 'hl' : ''}"><td>${c.threshold.toFixed(2)}</td><td class="n">${c.n_auto}/${c.n_total}</td><td class="n">${pct(c.precision)}</td><td class="n">${pct(c.recall)}</td><td class="n">${pct(c.coverage)}</td></tr>`).join('')}</table>
+    <h2 style="margin-top:12px">Held-out records</h2>
+    <table><tr><th>ID</th><th class="n">Confidence</th><th>Result</th><th>Wrong fields</th></tr>${ev.records.map((r) => `<tr><td>${r.record_id}</td><td class="n">${r.confidence.toFixed(2)}</td><td><span class="pill ${r.correct ? 'ok' : 'bad'}">${r.correct ? 'correct' : 'wrong'}</span></td><td>${r.wrong_fields.map((f) => `${esc(f)}: proposed ${esc(r.proposed[f])}, label ${esc(r.truth[f])}`).join('; ')}</td></tr>`).join('')}</table>
+    <div class="small" style="margin-top:8px">Anomaly classification on held-out anomalies: ${ev.classification.correct}/${ev.classification.expected} correct (${pct(ev.classification.accuracy)}).</div>`;
+}
+function curveSvg(curve, t) {
+  const W = 360, H = 120, x = (v) => 30 + ((v - 0.5) / 0.5) * (W - 40), y = (v) => H - 20 - v * (H - 40);
+  const line = (key, color) => curve.filter((c) => c[key] !== null).map((c, i) => `${i ? 'L' : 'M'}${x(c.threshold).toFixed(1)},${y(c[key]).toFixed(1)}`).join(' ');
+  return `<svg viewBox="0 0 ${W} ${H}" style="max-width:420px;width:100%" role="img" aria-label="Precision and recall by threshold">
+    <path d="${line('precision')}" fill="none" stroke="var(--ok)" stroke-width="2"/><path d="${line('recall')}" fill="none" stroke="var(--acc)" stroke-width="2"/>
+    <line x1="${x(t)}" x2="${x(t)}" y1="10" y2="${H - 20}" stroke="var(--mute)" stroke-dasharray="3"/>
+    <text x="30" y="${H - 4}" font-size="10" fill="var(--mute)">0.5</text><text x="${W - 22}" y="${H - 4}" font-size="10" fill="var(--mute)">1.0</text>
+    <text x="36" y="12" font-size="10" fill="var(--ok)">precision</text><text x="90" y="12" font-size="10" fill="var(--acc)">recall</text></svg>`;
+}
+
+async function renderAudit() {
+  const rows = await api('/api/audit');
+  $('audit').innerHTML = rows.length ? `<tr><th>Time (UTC)</th><th>Item</th><th>Model version</th><th class="n">Model conf</th><th>Human action</th><th>Final</th><th>Actor</th></tr>` +
+    rows.map((r) => `<tr><td>${esc(r.ts)}</td><td>${esc(r.item_id)}</td><td>${esc(r.model_version)}</td><td class="n">${r.model_confidence == null ? 'n/a' : (+r.model_confidence).toFixed(2)}</td><td>${esc(r.human_action)}</td><td class="small">${esc(r.final)}</td><td>${esc(r.actor)}</td></tr>`).join('')
+    : '<tr><td class="mute">No decisions yet. Approve or override an item in the queue.</td></tr>';
+}
+
+const setThr = guard(async (v) => { await api('/api/threshold', { threshold: +v }); await loadAll(); });
+const rebuild = guard(async () => { await api('/api/pipeline/run', {}); await loadAll(); });
+
+// ---------------- Screen 2 ----------------
+let REQ = null, LAST = null;
+async function loadMuse() {
+  const m = await api('/api/muse');
+  REQ = m.tool_call.arguments;
+  $('muse').innerHTML = `<em>"${esc(m.request_text)}"</em>`;
+  $('call').textContent = JSON.stringify(m.tool_call, null, 2);
+}
+const runSearch = guard(async () => {
+  if (!REQ) await loadMuse();
+  LAST = await api('/api/connect/search', REQ);
+  $('book').hidden = true;
+  const o = LAST.offers;
+  $('resp').innerHTML = `<div class="small mute">${LAST.nights} nights, party of ${LAST.party_size}. ${o.length} ranked matches, ${LAST.excluded.length} records excluded.</div>` +
+    (o.length ? o.map((x) => `<div class="card"><div class="row"><strong>#${x.rank} ${esc(x.hotel)}</strong><span class="pill">${esc(x.offer_id)}</span></div>
+      <div class="small">${esc(x.room.category)}, ${esc(x.room.bed)} bed, ${esc(x.room.view)} view, sleeps ${x.room.max_occupancy}. ${esc(x.rate_plan.meal_plan)}, ${esc(x.cancellation_terms)}${x.rate_plan.prepaid ? ', prepaid' : ''}.</div>
+      <table>${x.price.lines.map((l) => `<tr><td>${esc(l.label)}</td><td class="n">${money(l.amount_cents, l.currency)}</td></tr>`).join('')}</table>
+      <div class="row" style="margin-top:6px"><button class="act" onclick="bookOffer('${esc(x.offer_id)}')">Book</button></div></div>`).join('')
+      : '<div class="card mute">No confirmed inventory matches. Confirm mappings on Screen 1 or use the demo shortcut above.</div>') +
+    `<details><summary class="small">Exclusion reasons</summary><table>${LAST.excluded.map((e) => `<tr><td>${esc(e.record_id)}</td><td>${esc(e.room)}</td><td>${esc(e.reason)}</td></tr>`).join('')}</table></details>
+     <details><summary class="small">Raw JSON response</summary><pre>${esc(JSON.stringify(LAST, null, 2))}</pre></details>`;
+});
+const approveAll = guard(async () => { const r = await api('/api/demo/approve-all-review', {}); $('s2msg').textContent = `Approved ${r.approved} items (audited as demo-shortcut). ${r.skipped.length} skipped.`; await loadAll(); await runSearch(); });
+
+const bookOffer = guard(async (id) => {
+  $('book').hidden = false;
+  $('book').innerHTML = `<h2>Booking ${esc(id)}</h2><div class="row"><span class="mute">Scenario</span>
+    ${[['completed', 'Completed stay'], ['cancelled_no_charge', 'Cancelled, no charge'], ['cancelled_retained', 'Cancelled, first night retained']].map(([k, l]) => `<button class="alt" onclick="statement('${esc(id)}','${k}')">${l}</button>`).join('')}
+    </div><div id="stmt"></div>`;
+  await statement(id, 'completed');
+});
+const statement = guard(async (id, scenario) => {
+  const b = await api('/api/connect/book', { offer_id: id, request: REQ, scenario });
+  const s = b.statement, f = s.fee, card = s.virtual_card, h = s.hotel_currency, by = s.buyer_currency;
+  $('stmt').innerHTML = `<div class="grid3" style="margin-top:10px">
+    <div class="card"><h2>Buyer price and virtual card</h2><table>${b.offer.price.lines.map((l) => `<tr><td>${esc(l.label)}</td><td class="n">${money(l.amount_cents, l.currency)}</td></tr>`).join('')}</table>
+      <div class="small" style="margin-top:6px">Single-use virtual card (simulated): ${esc(card.card_id)}<br>${esc(card.display)}<br>Limit ${money(card.limit_cents, by)} (exact total)<br>Status ${esc(card.status)}, captured ${money(card.captured_cents, by)}</div></div>
+    <div class="card"><h2>Hotel statement: ${esc(scenario.replace(/_/g, ' '))}</h2><table>
+      <tr><td>Pre-tax net rate (${s.nights} nights)</td><td class="n">${money(s.pre_tax_net_rate_cents, h)}</td></tr>
+      ${s.retained_cents ? `<tr><td>Retained cancellation charge</td><td class="n">${money(s.retained_cents, h)}</td></tr>` : ''}
+      <tr><td>Fee base</td><td class="n">${money(f.base_cents, h)}</td></tr>
+      <tr><td>Platform fee (${esc(f.rule)})</td><td class="n">-${money(f.fee_cents, h)}</td></tr>
+      <tr><th>Net payout to hotel</th><th class="n">${money(s.hotel_net_payout_cents, h)}</th></tr></table>
+      <div class="small mute" style="margin-top:6px">Fee is 3% of the pre-tax net rate with a per-booking floor (placeholder, configurable). ${esc(s.note)}</div></div>
+    <div class="card"><h2>Ledger</h2><table>${s.ledger.map((e) => `<tr><td>${esc(e.account)}</td><td class="n">${money(e.amount_cents, e.currency)}</td></tr>`).join('')}</table>
+      <div class="small mute" style="margin-top:6px">Integer minor units. No LLM is imported by the fee, pricing or ledger code, and a test enforces it.</div></div></div>`;
+});
+
+loadAll().catch((e) => { document.body.insertAdjacentHTML('afterbegin', `<div class="card err">Failed to load: ${esc(e.message)}</div>`); });

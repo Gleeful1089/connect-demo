@@ -1,0 +1,106 @@
+{
+ "R03": {
+  "truth": {
+   "category": "deluxe",
+   "bed": "king",
+   "view": "ocean",
+   "max_occupancy": 2,
+   "meal_plan": "half_board",
+   "cancellation": "free_48h",
+   "prepaid": false
+  },
+  "expected_anomalies": [
+   "rate-plan-on-wrong-room"
+  ]
+ },
+ "R04": {
+  "truth": {
+   "category": "deluxe",
+   "bed": "twin",
+   "view": "city",
+   "max_occupancy": 2,
+   "meal_plan": "breakfast",
+   "cancellation": "free_48h",
+   "prepaid": false
+  },
+  "expected_anomalies": [
+   "schema-drift"
+  ]
+ },
+ "R06": {
+  "truth": {
+   "category": "suite",
+   "bed": "king",
+   "view": "ocean",
+   "max_occupancy": 4,
+   "meal_plan": "room_only",
+   "cancellation": "non_refundable",
+   "prepaid": true
+  },
+  "expected_anomalies": [
+   "rate-outlier"
+  ]
+ },
+ "R09": {
+  "truth": {
+   "category": "standard",
+   "bed": "queen",
+   "view": "city",
+   "max_occupancy": 2,
+   "meal_plan": "room_only",
+   "cancellation": "unspecified",
+   "prepaid": false
+  },
+  "expected_anomalies": [
+   "missing-cancellation-policy"
+  ]
+ },
+ "R12": {
+  "truth": {
+   "category": "deluxe",
+   "bed": "king",
+   "view": "ocean",
+   "max_occupancy": 2,
+   "meal_plan": "room_only",
+   "cancellation": "non_refundable",
+   "prepaid": true
+  },
+  "expected_anomalies": []
+ },
+ "R14": {
+  "truth": {
+   "category": "family",
+   "bed": "two_queens",
+   "view": "none",
+   "max_occupancy": 5,
+   "meal_plan": "half_board",
+   "cancellation": "free_48h",
+   "prepaid": false
+  },
+  "expected_anomalies": []
+ },
+ "R17": {
+  "truth": {
+   "category": "superior",
+   "bed": "twin",
+   "view": "lake",
+   "max_occupancy": 2,
+   "meal_plan": "room_only",
+   "cancellation": "non_refundable",
+   "prepaid": false
+  },
+  "expected_anomalies": []
+ },
+ "R18": {
+  "truth": {
+   "category": "family",
+   "bed": "unspecified",
+   "view": "lake",
+   "max_occupancy": 5,
+   "meal_plan": "half_board",
+   "cancellation": "free_48h",
+   "prepaid": false
+  },
+  "expected_anomalies": []
+ }
+}

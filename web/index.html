@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Connect demo</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --ink:#1b2430; --mute:#5b6675; --line:#dde2e8; --acc:#1f5fbf; --ok:#17743a; --warn:#a15c00; --bad:#b3261e; --sim:#6b2fa0; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#12161c; --card:#1b212a; --ink:#e8ecf1; --mute:#9aa5b4; --line:#2c3541; --acc:#6aa5ff; --ok:#5fcf8a; --warn:#f0b050; --bad:#ff8a80; --sim:#c79bff; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.45 system-ui, sans-serif; }
+  header { position:sticky; top:0; z-index:5; background:var(--card); border-bottom:1px solid var(--line); padding:8px 16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  header h1 { font-size:16px; margin:0; }
+  .banner { font-weight:600; color:var(--bad); border:1px solid var(--bad); border-radius:4px; padding:1px 8px; }
+  .sim { color:var(--sim); border:1px solid var(--sim); border-radius:4px; padding:1px 8px; font-size:12px; }
+  nav button { background:none; border:0; padding:6px 12px; cursor:pointer; color:var(--mute); font-size:14px; border-bottom:2px solid transparent; }
+  nav button.on { color:var(--ink); border-color:var(--acc); font-weight:600; }
+  main { padding:16px; max-width:1300px; margin:0 auto; }
+  section { margin-bottom:24px; }
+  h2 { font-size:15px; margin:0 0 8px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:6px; padding:12px; margin-bottom:10px; }
+  .row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+  .grid3 { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:12px; }
+  @media (max-width: 900px) { .grid3 { grid-template-columns:1fr; } }
+  table { border-collapse:collapse; width:100%; font-size:13px; }
+  th, td { text-align:left; padding:4px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--mute); font-weight:600; }
+  td.n, th.n { text-align:right; font-variant-numeric: tabular-nums; }
+  .pill { display:inline-block; padding:0 7px; border-radius:10px; font-size:12px; border:1px solid var(--line); color:var(--mute); }
+  .pill.ok { color:var(--ok); border-color:var(--ok); } .pill.warn { color:var(--warn); border-color:var(--warn); } .pill.bad { color:var(--bad); border-color:var(--bad); }
+  button.act { background:var(--acc); color:#fff; border:0; border-radius:4px; padding:5px 12px; cursor:pointer; }
+  button.alt { background:none; color:var(--acc); border:1px solid var(--acc); border-radius:4px; padding:5px 12px; cursor:pointer; }
+  pre { background:var(--bg); border:1px solid var(--line); border-radius:4px; padding:8px; overflow:auto; font-size:12px; margin:6px 0 0; max-height:340px; }
+  .mute { color:var(--mute); } .small { font-size:12px; }
+  select, input[type=range] { font:inherit; }
+  .hl { background:rgba(31,95,191,.12); }
+  .tag { font-size:11px; font-weight:700; letter-spacing:.04em; color:var(--warn); border:1px solid var(--warn); border-radius:3px; padding:0 5px; }
+  .err { color:var(--bad); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Connect: AI on messy data, code on money</h1>
+  <span class="banner">Synthetic data. Demo only.</span>
+  <span id="simflag"></span>
+  <nav><button id="t1" class="on" onclick="show(1)">Screen 1: Onboarding workbench</button><button id="t2" onclick="show(2)">Screen 2: Booking and statement</button></nav>
+</header>
+<div id="toast" class="card err" hidden style="position:fixed;right:16px;bottom:16px;z-index:9;max-width:420px"></div>
+<main>
+<div id="s1">
+  <section class="card">
+    <div class="row">
+      <strong>Auto-confirm threshold</strong>
+      <input id="thr" type="range" min="0" max="1" step="0.05" style="width:220px" oninput="thrLabel.textContent=(+this.value).toFixed(2)" onchange="setThr(this.value)">
+      <span id="thrLabel" class="pill"></span>
+      <span id="counts" class="mute"></span>
+      <button class="alt" onclick="rebuild()">Rebuild from synthetic files</button>
+    </div>
+    <div class="small mute" style="margin-top:6px">Mappings at or above the threshold are auto-confirmed. The rest go to the review queue. Anomaly detection below is statistical and rule based, with no model involved. A model only classifies what the rules found.</div>
+  </section>
+
+  <section><h2>Triage queue (highest priority first)</h2><div id="queue"></div></section>
+  <section><h2>Anomaly taxonomy</h2><div id="taxo" class="card"></div></section>
+
+  <section><h2>Evaluation on the held-out set</h2><div id="eval" class="card"></div></section>
+  <section><h2>Records</h2><div class="card" style="overflow:auto"><table id="records"></table></div></section>
+  <section><h2>Audit trail</h2><div class="card" style="overflow:auto"><table id="audit"></table></div></section>
+</div>
+
+<div id="s2" hidden>
+  <div class="card row">
+    <button class="act" onclick="runSearch()">Run Muse request</button>
+    <button class="alt" onclick="approveAll()">Demo shortcut: approve all pending review items</button>
+    <span id="s2msg" class="mute small"></span>
+  </div>
+  <div class="grid3">
+    <div class="card"><h2>(a) Muse (mock buyer agent)</h2><span class="tag">BUYER AGENT's job</span>
+      <p id="muse"></p><div class="small mute">Turning this sentence into a structured request is done by the buyer's agent. Connect never receives the sentence.</div></div>
+    <div class="card"><h2>(b) Structured API call</h2><span class="tag">BUYER AGENT output</span><pre id="call"></pre></div>
+    <div class="card"><h2>(c) Connect response</h2><span class="tag" style="color:var(--ok);border-color:var(--ok)">Deterministic. No LLM.</span>
+      <div id="resp"></div></div>
+  </div>
+  <section class="card" id="book" hidden></section>
+</div>
+</main>
+<script src="/static/app.js"></script>
+</body>
+</html>

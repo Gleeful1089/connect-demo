@@ -1,0 +1,160 @@
+{
+ "property": {
+  "id": "HG1",
+  "name": "Harbor Grand",
+  "currency": "USD",
+  "city": "Valmora Bay"
+ },
+ "rooms": [
+  {
+   "code": "DLX-KG-OV",
+   "max_occ": 2,
+   "ratePlans": [
+    {
+     "code": "BAR-BB",
+     "rate": "240.00",
+     "public_rate": "250.00",
+     "cancel": "FREE48",
+     "prepaid": false,
+     "applies_to": [
+      "DLX-KG-OV"
+     ],
+     "avail": 5,
+     "updated": "2026-11-01T09:00:00Z"
+    },
+    {
+     "code": "NR-RO",
+     "rate": "205.00",
+     "public_rate": "250.00",
+     "cancel": "NONREF",
+     "prepaid": true,
+     "applies_to": [
+      "DLX-KG-OV"
+     ],
+     "avail": 3,
+     "updated": "2026-11-01T09:00:00Z"
+    },
+    {
+     "code": "FAM-HB",
+     "rate": "340.00",
+     "public_rate": "360.00",
+     "cancel": "FREE48",
+     "prepaid": false,
+     "applies_to": [
+      "FAM-2Q-GD"
+     ],
+     "avail": 2,
+     "updated": "2026-11-01T09:00:00Z"
+    }
+   ]
+  },
+  {
+   "code": "DLX-TW-CV",
+   "max_occ": 2,
+   "ratePlans": [
+    {
+     "code": "BAR-BB",
+     "price": "215.00",
+     "public_rate": "225.00",
+     "cancel": "FREE48",
+     "prepaid": false,
+     "applies_to": [
+      "DLX-TW-CV"
+     ],
+     "avail": 4,
+     "updated": "2026-11-01T09:00:00Z"
+    }
+   ]
+  },
+  {
+   "code": "STE-KG-OV",
+   "max_occ": 4,
+   "ratePlans": [
+    {
+     "code": "BAR-BB",
+     "rate": "420.00",
+     "public_rate": "440.00",
+     "cancel": "FREE48",
+     "prepaid": false,
+     "applies_to": [
+      "STE-KG-OV"
+     ],
+     "avail": 2,
+     "updated": "2026-11-01T09:00:00Z"
+    },
+    {
+     "code": "NR-RO",
+     "rate": "1150.00",
+     "public_rate": "440.00",
+     "cancel": "NONREF",
+     "prepaid": true,
+     "applies_to": [
+      "STE-KG-OV"
+     ],
+     "avail": 2,
+     "updated": "2026-11-01T09:00:00Z"
+    }
+   ]
+  },
+  {
+   "code": "FAM-2Q-GD",
+   "max_occ": 5,
+   "ratePlans": [
+    {
+     "code": "BAR-HB",
+     "rate": "340.00",
+     "public_rate": "360.00",
+     "cancel": "FREE48",
+     "prepaid": false,
+     "applies_to": [
+      "FAM-2Q-GD"
+     ],
+     "avail": 2,
+     "updated": "2026-11-01T09:00:00Z"
+    },
+    {
+     "code": "BAR-HB",
+     "rate": "340.00",
+     "public_rate": "360.00",
+     "cancel": "FREE48",
+     "prepaid": false,
+     "applies_to": [
+      "FAM-2Q-GD"
+     ],
+     "avail": 2,
+     "updated": "2026-11-01T09:00:00Z"
+    }
+   ]
+  },
+  {
+   "code": "STD-QN-CV",
+   "max_occ": 2,
+   "ratePlans": [
+    {
+     "code": "BAR-RO",
+     "rate": "165.00",
+     "public_rate": "170.00",
+     "cancel": null,
+     "prepaid": false,
+     "applies_to": [
+      "STD-QN-CV"
+     ],
+     "avail": 6,
+     "updated": "2026-11-01T09:00:00Z"
+    },
+    {
+     "code": "BAR-BB",
+     "rate": "189.00",
+     "public_rate": "195.00",
+     "cancel": "FREE24",
+     "prepaid": false,
+     "applies_to": [
+      "STD-QN-CV"
+     ],
+     "avail": 4,
+     "updated": "2026-10-14T09:00:00Z"
+    }
+   ]
+  }
+ ]
+}

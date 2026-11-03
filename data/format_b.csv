@@ -1,0 +1,11 @@
+hotel,room_name,rate_plan_name,nightly_rate,currency,public_rate,max_guests,rooms_left,last_updated,cancel_policy
+Seaview Inn,Deluxe King Room - Ocean View,Flexible rate incl. breakfast,230.00,USD,245.00,2,4,2026-11-01T10:00:00Z,Free cancellation until 48h before arrival
+Seaview Inn,Dlx King w/ sea view,Advance Purchase (non refundable),198.00,USD,245.00,2,3,2026-11-01T10:00:00Z,"Non-refundable, prepaid"
+Seaview Inn,"Standard Queen, city side",Room Only Flex,150.00,USD,155.00,2,6,2026-11-01T10:00:00Z,Free cancel 24 hrs before arrival
+Seaview Inn,Family Room 2 Queen Beds (sleeps 5),Half Board Flex,330.00,USD,345.00,5,2,2026-11-01T10:00:00Z,Free cancel until 48 hours
+Seaview Inn,Garden Twin,Bed & Breakfast,180.00,USD,175.00,2,3,2026-11-01T10:00:00Z,free cancellation 24h
+Lakeside Boutique,Superior Double Lake View,Breakfast Included Flexible,160.00,EUR,170.00,3,4,2026-11-01T11:00:00Z,Free cancellation up to 48 hours before check-in
+Lakeside Boutique,Superior Twin Lake View,Room only non-refundable,135.00,EUR,170.00,2,5,2026-11-01T11:00:00Z,Non refundable
+Lakeside Boutique,Family Suite Lake View (up to 5 guests),Half board flexible,280.00,EUR,295.00,5,2,2026-11-01T11:00:00Z,Free cancellation until 48 hours before arrival
+Lakeside Boutique,Classic Double Garden,Breakfast Included Flexible,120.00,EUR,128.00,2,6,2026-11-01T11:00:00Z,Free cancellation 24h
+Lakeside Boutique,Standard Double,Room Only Flex,110.00,EUR,118.00,6,3,2026-11-01T11:00:00Z,Free cancel 24 hrs before arrival
