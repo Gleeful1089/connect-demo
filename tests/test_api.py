@@ -37,7 +37,9 @@ def test_new_visitor_gets_a_seeded_sandbox_and_a_cookie(app):
     assert r.status_code == 200 and len(r.json()["items"]) == baseline(app) > 0
     cookie = r.headers["set-cookie"]
     assert "connect_sid=" in cookie and "HttpOnly" in cookie and "SameSite=lax" in cookie
-    assert c.get("/api/meta").json()["sandbox"]["id"] == c.cookies["connect_sid"][:6]
+    sid = c.cookies["connect_sid"]
+    shown = c.get("/api/meta").json()["sandbox"]["id"]
+    assert len(shown) == 6 and shown not in sid          # a hash, never a slice of the secret cookie
 
 
 def test_two_visitors_do_not_affect_each_other(app):

@@ -5,6 +5,7 @@ decisions never touch another's. The sandbox is created automatically on the fir
 """
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -85,7 +86,7 @@ def meta(request: Request):
     provs = [r[0] for r in C(request).execute("SELECT DISTINCT provenance FROM mappings")]
     return {"banner": "Synthetic data. Demo only.", "llm_mode": llm._mode(), "provenance": provs,
             "simulated": "simulated" in provs, "threshold": _threshold(request),
-            "sandbox": {"id": request.state.sid[:6], "ttl_days": config.SANDBOX_TTL_DAYS}}
+            "sandbox": {"id": hashlib.sha256(request.state.sid.encode()).hexdigest()[:6], "ttl_days": config.SANDBOX_TTL_DAYS}}
 
 
 @api.post("/pipeline/run")

@@ -108,3 +108,10 @@ unless an entry says otherwise, because no ANTHROPIC_API_KEY was available durin
 - **Correction:** counts are now relative to a fresh sandbox (`baseline()`). One more failure was a test-client quirk
   (a second cookie with the same name), fixed by sending the forged cookie as a raw header. I also changed
   `new_sid` to a constant to confirm the isolation tests fail when sandboxes are shared: 5 failed, then I restored it.
+
+## 13. First Railway deploy failed: no start command detected
+- **What was wrong:** the build stopped with "No start command detected". My railway.toml named the NIXPACKS builder and
+  a start command (copied from another project), but Railway now builds with Railpack, which did not
+  take the start command from railway.toml.
+- **How detected:** `railway up` reported "Deploy failed"; the build log said so.
+- **Correction:** added a Procfile with the uvicorn command and removed the stale builder line.
