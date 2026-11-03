@@ -51,3 +51,27 @@ unless an entry says otherwise, because no ANTHROPIC_API_KEY was available durin
 - **Correction:** every fixture carries provenance="simulated"; the UI header and the evaluation panel say so.
   `make record` with a key replaces them with real output. After that, items 1 and 2 above should be re-checked,
   since a real model will fail differently from the heuristic.
+
+## 6. record.py rejected a valid key (my own regression)
+- **What was wrong:** `make record` printed "Set ANTHROPIC_API_KEY first" although the key was in `.env`.
+- **How detected:** the first real run of `make record`, right after adding `.env` support.
+- **Cause:** scripts/record.py checked os.environ before importing config.py, which is what loads `.env`.
+- **Correction:** import config first. Nothing was deleted: the check runs before the fixtures are removed.
+
+## 7. Six tests were coupled to the simulated fixtures (tests passing for the wrong reason)
+- **What was wrong:** after recording real model output, 6 Screen 2 and API tests failed. They asserted a specific
+  search ranking (R18, R14, R07) and that certain records were auto-confirmed. Those facts came from the heuristic's
+  confidence scores, not from anything the code guarantees.
+- **How detected:** running pytest right after `make record` swapped the fixtures.
+- **Correction:** the simulated outputs now live in tests/data/simulated_calls.json and a conftest autouse fixture
+  points all tests at them. The app uses fixtures/calls.json (real). `make fixtures` only rebuilds the simulated set.
+
+## 8. Approving a fix released a suspect record into search (design bug)
+- **What was wrong:** after the demo shortcut approved every queue item, R20 ("Standard Double" claiming to sleep 6)
+  appeared as a bookable offer for the family of five at $243.40. I had treated "resolved" as "safe to sell" for
+  every class except duplicates and wrong-room plans.
+- **How detected:** I ran the full approve-all flow against the real recorded fixtures and read the offer list.
+  The simulated run had hidden it, because R20 had been excluded for a different reason there.
+- **Cause:** approving a proposed fix records a decision. It does not correct the data at the hotel.
+- **Correction:** records with a blocking anomaly stay out of search after approval ("held pending hotel fix")
+  until the data is re-ingested. A regression test covers it.

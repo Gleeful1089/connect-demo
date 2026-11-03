@@ -7,11 +7,12 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import config  # loads .env, so it must come before the key check
+
 if not os.environ.get("ANTHROPIC_API_KEY"):
-    sys.exit("Set ANTHROPIC_API_KEY first.")
+    sys.exit("Set ANTHROPIC_API_KEY first (in the environment or in .env).")
 os.environ["CONNECT_LLM"] = "record"
 
-import config
 import pipeline
 
 if config.FIXTURE_PATH.exists():

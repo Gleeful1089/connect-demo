@@ -105,3 +105,12 @@ def test_api_screen1_endpoints(tmp_path, monkeypatch):
     assert c.post("/api/threshold", json={"threshold": 2}).status_code == 400
     assert c.get("/").status_code == 200
     main._conn = None
+
+
+def test_approving_a_fix_does_not_release_a_blocked_record(conn):
+    item = next(i for i in queue.build_queue(conn) if i["record_id"] == "R20" and i["kind"] == "anomaly")
+    queue.decide(conn, item["item_id"], "approve")
+    pipeline.set_threshold(conn, 0.5)   # make sure the mapping itself is confirmed
+    r = cs.search(conn, muse.STRUCTURED_REQUEST)
+    assert "R20" not in [o["offer_id"] for o in r["offers"]]
+    assert any(e["record_id"] == "R20" and e["reason"].startswith("held pending hotel fix") for e in r["excluded"])

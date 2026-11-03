@@ -20,6 +20,7 @@ from triage import classify
 
 
 def main():
+    config.FIXTURE_PATH = config.SIM_FIXTURE_PATH   # simulated fixtures never overwrite recorded ones
     if config.FIXTURE_PATH.exists():
         config.FIXTURE_PATH.unlink()
     records = ingest.load_all()

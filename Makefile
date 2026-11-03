@@ -13,6 +13,7 @@ run:
 test:
 	$(PY) -m pytest -q
 
+# Rebuilds the SIMULATED fixtures that the tests use (tests/data/simulated_calls.json).
 fixtures:
 	$(PY) scripts/author_fixtures.py
 

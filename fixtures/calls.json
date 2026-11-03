@@ -1,164 +1,164 @@
 {
  "05b987d94065783c5afe": {
-  "model": "simulated-heuristic-v1",
-  "provenance": "simulated",
+  "model": "claude-haiku-5-5",
+  "provenance": "live-model",
   "task": "map_record",
-  "text": "{\"category\": \"standard\", \"bed\": \"queen\", \"view\": \"city\", \"max_occupancy\": 2, \"meal_plan\": \"breakfast\", \"cancellation\": \"free_24h\", \"prepaid\": false, \"confidence\": 0.98}"
+  "text": "{\"category\":\"standard\",\"bed\":\"queen\",\"view\":\"city\",\"max_occupancy\":2,\"meal_plan\":\"breakfast\",\"cancellation\":\"free_24h\",\"prepaid\":false,\"confidence\":0.7}"
  },
  "0e06bcc61db81a849a80": {
-  "model": "simulated-heuristic-v1",
-  "provenance": "simulated",
+  "model": "claude-haiku-5-5",
+  "provenance": "live-model",
   "task": "map_record",
-  "text": "{\"category\": \"deluxe\", \"bed\": \"king\", \"view\": \"ocean\", \"max_occupancy\": 2, \"meal_plan\": \"room_only\", \"cancellation\": \"non_refundable\", \"prepaid\": true, \"confidence\": 0.98}"
+  "text": "{\"category\":\"deluxe\",\"bed\":\"king\",\"view\":\"ocean\",\"max_occupancy\":2,\"meal_plan\":\"room_only\",\"cancellation\":\"non_refundable\",\"prepaid\":true,\"confidence\":0.75}"
  },
  "2e7c098fbc9512b3fc62": {
-  "model": "simulated-heuristic-v1",
-  "provenance": "simulated",
+  "model": "claude-haiku-5-5",
+  "provenance": "live-model",
   "task": "map_record",
-  "text": "{\"category\": \"standard\", \"bed\": \"queen\", \"view\": \"city\", \"max_occupancy\": 2, \"meal_plan\": \"room_only\", \"cancellation\": \"free_24h\", \"prepaid\": false, \"confidence\": 0.98}"
+  "text": "{\"category\":\"standard\",\"bed\":\"queen\",\"view\":\"city\",\"max_occupancy\":2,\"meal_plan\":\"room_only\",\"cancellation\":\"free_24h\",\"prepaid\":false,\"confidence\":0.7}"
  },
  "403cdb60948098456b64": {
-  "model": "simulated-heuristic-v1",
-  "provenance": "simulated",
+  "model": "claude-haiku-5-5",
+  "provenance": "live-model",
   "task": "map_record",
-  "text": "{\"category\": \"deluxe\", \"bed\": \"king\", \"view\": \"ocean\", \"max_occupancy\": 2, \"meal_plan\": \"breakfast\", \"cancellation\": \"free_48h\", \"prepaid\": false, \"confidence\": 0.98}"
+  "text": "{\"category\":\"deluxe\",\"bed\":\"king\",\"view\":\"ocean\",\"max_occupancy\":2,\"meal_plan\":\"breakfast\",\"cancellation\":\"free_48h\",\"prepaid\":false,\"confidence\":0.85}"
  },
  "41cdfd0b504a756da3c0": {
-  "model": "simulated-heuristic-v1",
-  "provenance": "simulated",
+  "model": "claude-haiku-5-5",
+  "provenance": "live-model",
   "task": "classify_anomaly",
-  "text": "{\"class\": \"rate-plan-on-wrong-room\", \"confidence\": 0.92, \"rationale\": \"Plan lists eligible rooms and this room is not one.\", \"new_class\": null}"
+  "text": "{\"class\":\"rate-plan-on-wrong-room\",\"confidence\":0.97,\"rationale\":\"The detector rule is wrong-room-plan. The FAM-HB plan is attached to DLX-KG-OV, but its applicability list is only FAM-2Q-GD, so the plan is on a room it does not apply to.\",\"new_class\":null}"
  },
  "5390c5679dd4ea9e1577": {
-  "model": "simulated-heuristic-v1",
-  "provenance": "simulated",
+  "model": "claude-haiku-5-5",
+  "provenance": "live-model",
   "task": "map_record",
-  "text": "{\"category\": \"standard\", \"bed\": \"queen\", \"view\": \"city\", \"max_occupancy\": 2, \"meal_plan\": \"room_only\", \"cancellation\": \"unspecified\", \"prepaid\": false, \"confidence\": 0.78}"
+  "text": "{\"category\":\"standard\",\"bed\":\"queen\",\"view\":\"city\",\"max_occupancy\":2,\"meal_plan\":\"room_only\",\"cancellation\":\"unspecified\",\"prepaid\":false,\"confidence\":0.8}"
  },
  "5408a51cfa11f17ccb69": {
-  "model": "simulated-heuristic-v1",
-  "provenance": "simulated",
+  "model": "claude-haiku-5-5",
+  "provenance": "live-model",
   "task": "classify_anomaly",
-  "text": "{\"class\": \"NEW\", \"confidence\": 0.62, \"rationale\": \"Rate is above the hotel's public rate, which no existing class covers.\", \"new_class\": {\"name\": \"parity-break\", \"description\": \"Rate through the platform exceeds the hotel's own public rate.\"}}"
+  "text": "{\"class\":\"NEW\",\"confidence\":0.7,\"rationale\":\"The detector compares the connector rate against the public rate (parity), not against a peer group. The rate is 2.9% above public against a 2% tolerance, which is a marginal parity violation rather than a 'far outside' outlier. No existing class covers a rate-parity deviation from the public rate.\",\"new_class\":{\"name\":\"rate-parity-break\",\"description\":\"A rate deviates from the public (reference) rate beyond the allowed parity tolerance.\"}}"
  },
  "554ab6cb666c71f36047": {
-  "model": "simulated-heuristic-v1",
-  "provenance": "simulated",
+  "model": "claude-haiku-5-5",
+  "provenance": "live-model",
   "task": "classify_anomaly",
-  "text": "{\"class\": \"room-mismatch\", \"confidence\": 0.7, \"rationale\": \"Stated occupancy conflicts with the room type text.\", \"new_class\": null}"
+  "text": "{\"class\":\"room-mismatch\",\"confidence\":0.85,\"rationale\":\"The room text 'Standard Double' implies a maximum occupancy of 3, but the room attribute stated_max_occupancy is 6. The room text and room attributes disagree, which is the room-mismatch definition. The occupancy-mismatch rule name does not change the class, since the underlying issue is a conflict between room text and attributes.\",\"new_class\":null}"
  },
  "570cadd11a9df6c583e8": {
-  "model": "simulated-heuristic-v1",
-  "provenance": "simulated",
+  "model": "claude-haiku-5-5",
+  "provenance": "live-model",
   "task": "classify_anomaly",
-  "text": "{\"class\": \"rate-outlier\", \"confidence\": 0.93, \"rationale\": \"Rate/public ratio is outside the peer IQR fence.\", \"new_class\": null}"
+  "text": "{\"class\":\"rate-outlier\",\"confidence\":0.93,\"rationale\":\"The detector is an IQR outlier test. The rate of 115000 cents is about 2.6 times the public rate of 44000 cents and well above the high fence of 1.964. The anomaly is a rate far outside its peer group, which is the rate-outlier definition.\",\"new_class\":null}"
  },
  "6bc484e7b514de07f85f": {
-  "model": "simulated-heuristic-v1",
-  "provenance": "simulated",
+  "model": "claude-haiku-5-5",
+  "provenance": "live-model",
   "task": "map_record",
-  "text": "{\"category\": \"standard\", \"bed\": \"twin\", \"view\": \"garden\", \"max_occupancy\": 2, \"meal_plan\": \"breakfast\", \"cancellation\": \"free_24h\", \"prepaid\": false, \"confidence\": 0.78}"
+  "text": "{\"category\":\"standard\",\"bed\":\"twin\",\"view\":\"garden\",\"max_occupancy\":2,\"meal_plan\":\"breakfast\",\"cancellation\":\"free_24h\",\"prepaid\":false,\"confidence\":0.7}"
  },
  "6c17c6cdb6efa6a4d07a": {
-  "model": "simulated-heuristic-v1",
-  "provenance": "simulated",
+  "model": "claude-haiku-5-5",
+  "provenance": "live-model",
   "task": "map_record",
-  "text": "{\"category\": \"superior\", \"bed\": \"twin\", \"view\": \"lake\", \"max_occupancy\": 2, \"meal_plan\": \"room_only\", \"cancellation\": \"non_refundable\", \"prepaid\": true, \"confidence\": 0.91}"
+  "text": "{\"category\":\"superior\",\"bed\":\"twin\",\"view\":\"lake\",\"max_occupancy\":2,\"meal_plan\":\"room_only\",\"cancellation\":\"non_refundable\",\"prepaid\":true,\"confidence\":0.8}"
  },
  "71c5c68e1d511737495b": {
-  "model": "simulated-heuristic-v1",
-  "provenance": "simulated",
+  "model": "claude-haiku-5-5",
+  "provenance": "live-model",
   "task": "map_record",
-  "text": "{\"category\": \"deluxe\", \"bed\": \"twin\", \"view\": \"city\", \"max_occupancy\": 2, \"meal_plan\": \"breakfast\", \"cancellation\": \"free_48h\", \"prepaid\": false, \"confidence\": 0.98}"
+  "text": "{\"category\":\"deluxe\",\"bed\":\"twin\",\"view\":\"city\",\"max_occupancy\":2,\"meal_plan\":\"breakfast\",\"cancellation\":\"free_48h\",\"prepaid\":false,\"confidence\":0.6}"
  },
  "782f9eca5de081ab64a4": {
-  "model": "simulated-heuristic-v1",
-  "provenance": "simulated",
+  "model": "claude-haiku-5-5",
+  "provenance": "live-model",
   "task": "map_record",
-  "text": "{\"category\": \"family\", \"bed\": \"two_queens\", \"view\": \"none\", \"max_occupancy\": 5, \"meal_plan\": \"half_board\", \"cancellation\": \"free_48h\", \"prepaid\": false, \"confidence\": 0.91}"
+  "text": "{\"category\":\"family\",\"bed\":\"two_queens\",\"view\":\"none\",\"max_occupancy\":5,\"meal_plan\":\"half_board\",\"cancellation\":\"free_48h\",\"prepaid\":false,\"confidence\":0.7}"
  },
  "8f65bf4a9eef6e4b06d1": {
-  "model": "simulated-heuristic-v1",
-  "provenance": "simulated",
+  "model": "claude-haiku-5-5",
+  "provenance": "live-model",
   "task": "classify_anomaly",
-  "text": "{\"class\": \"missing-cancellation-policy\", \"confidence\": 0.96, \"rationale\": \"Cancellation field is empty.\", \"new_class\": null}"
+  "text": "{\"class\":\"missing-cancellation-policy\",\"confidence\":0.97,\"rationale\":\"The detector rule is missing-cancellation and the evidence shows cancel_raw is null, meaning the rate plan has no cancellation policy. This matches the missing-cancellation-policy class exactly.\",\"new_class\":null}"
  },
  "936fdc9bc2d3361001ca": {
-  "model": "simulated-heuristic-v1",
-  "provenance": "simulated",
+  "model": "claude-haiku-5-5",
+  "provenance": "live-model",
   "task": "classify_anomaly",
-  "text": "{\"class\": \"duplicate-availability\", \"confidence\": 0.94, \"rationale\": \"Same room, plan and rate already listed.\", \"new_class\": null}"
+  "text": "{\"class\":\"duplicate-availability\",\"confidence\":0.85,\"rationale\":\"The detector rule is 'duplicate' and the evidence points to a record (R07) that this record duplicates, which matches the same room and rate plan being listed more than once. The evidence does not show whether the room and rate plan match exactly, so confidence is not maximal.\",\"new_class\":null}"
  },
  "aa3d2bbcd2429e42d4f3": {
-  "model": "simulated-heuristic-v1",
-  "provenance": "simulated",
+  "model": "claude-haiku-5-5",
+  "provenance": "live-model",
   "task": "map_record",
-  "text": "{\"category\": \"superior\", \"bed\": \"double\", \"view\": \"lake\", \"max_occupancy\": 3, \"meal_plan\": \"breakfast\", \"cancellation\": \"free_48h\", \"prepaid\": false, \"confidence\": 0.98}"
+  "text": "{\"category\":\"superior\",\"bed\":\"double\",\"view\":\"lake\",\"max_occupancy\":3,\"meal_plan\":\"breakfast\",\"cancellation\":\"free_48h\",\"prepaid\":false,\"confidence\":0.7}"
  },
  "b71347b3680183c9e1fe": {
-  "model": "simulated-heuristic-v1",
-  "provenance": "simulated",
+  "model": "claude-haiku-5-5",
+  "provenance": "live-model",
   "task": "map_record",
-  "text": "{\"category\": \"suite\", \"bed\": \"king\", \"view\": \"ocean\", \"max_occupancy\": 4, \"meal_plan\": \"breakfast\", \"cancellation\": \"free_48h\", \"prepaid\": false, \"confidence\": 0.98}"
+  "text": "{\"category\":\"suite\",\"bed\":\"king\",\"view\":\"ocean\",\"max_occupancy\":4,\"meal_plan\":\"breakfast\",\"cancellation\":\"free_48h\",\"prepaid\":false,\"confidence\":0.7}"
  },
  "b73ed81fa43aa3b83403": {
-  "model": "simulated-heuristic-v1",
-  "provenance": "simulated",
+  "model": "claude-haiku-5-5",
+  "provenance": "live-model",
   "task": "map_record",
-  "text": "{\"category\": \"deluxe\", \"bed\": \"king\", \"view\": \"ocean\", \"max_occupancy\": 2, \"meal_plan\": \"half_board\", \"cancellation\": \"free_48h\", \"prepaid\": false, \"confidence\": 0.98}"
+  "text": "{\"category\":\"deluxe\",\"bed\":\"king\",\"view\":\"ocean\",\"max_occupancy\":2,\"meal_plan\":\"half_board\",\"cancellation\":\"free_48h\",\"prepaid\":false,\"confidence\":0.6}"
  },
  "beaa91e23f4f8216c825": {
-  "model": "simulated-heuristic-v1",
-  "provenance": "simulated",
+  "model": "claude-haiku-5-5",
+  "provenance": "live-model",
   "task": "map_record",
-  "text": "{\"category\": \"deluxe\", \"bed\": \"king\", \"view\": \"ocean\", \"max_occupancy\": 2, \"meal_plan\": \"room_only\", \"cancellation\": \"non_refundable\", \"prepaid\": true, \"confidence\": 0.78}"
+  "text": "{\"category\":\"deluxe\",\"bed\":\"king\",\"view\":\"ocean\",\"max_occupancy\":2,\"meal_plan\":\"room_only\",\"cancellation\":\"non_refundable\",\"prepaid\":true,\"confidence\":0.8}"
  },
  "c3a4ab6b622e5736f5c4": {
-  "model": "simulated-heuristic-v1",
-  "provenance": "simulated",
+  "model": "claude-haiku-5-5",
+  "provenance": "live-model",
   "task": "classify_anomaly",
-  "text": "{\"class\": \"schema-drift\", \"confidence\": 0.9, \"rationale\": \"Payload keys differ from the connector's expected schema.\", \"new_class\": null}"
+  "text": "{\"class\":\"schema-drift\",\"confidence\":0.97,\"rationale\":\"The detector rule is schema-drift and the evidence shows the expected field 'rate' is missing while an unexpected field 'price' appears, which is a payload shape change relative to the connector's expected schema.\",\"new_class\":null}"
  },
  "d61cbc1613fb0957b140": {
-  "model": "simulated-heuristic-v1",
-  "provenance": "simulated",
+  "model": "claude-haiku-5-5",
+  "provenance": "live-model",
   "task": "map_record",
-  "text": "{\"category\": \"suite\", \"bed\": \"king\", \"view\": \"ocean\", \"max_occupancy\": 4, \"meal_plan\": \"room_only\", \"cancellation\": \"non_refundable\", \"prepaid\": true, \"confidence\": 0.98}"
+  "text": "{\"category\":\"suite\",\"bed\":\"king\",\"view\":\"ocean\",\"max_occupancy\":4,\"meal_plan\":\"room_only\",\"cancellation\":\"non_refundable\",\"prepaid\":true,\"confidence\":0.7}"
  },
  "d7e93935cc6a8c8491d7": {
-  "model": "simulated-heuristic-v1",
-  "provenance": "simulated",
+  "model": "claude-haiku-5-5",
+  "provenance": "live-model",
   "task": "map_record",
-  "text": "{\"category\": \"standard\", \"bed\": \"double\", \"view\": \"none\", \"max_occupancy\": 6, \"meal_plan\": \"room_only\", \"cancellation\": \"free_24h\", \"prepaid\": false, \"confidence\": 0.91}"
+  "text": "{\"category\":\"standard\",\"bed\":\"double\",\"view\":\"none\",\"max_occupancy\":6,\"meal_plan\":\"room_only\",\"cancellation\":\"free_24h\",\"prepaid\":false,\"confidence\":0.7}"
  },
  "e0b1a38e411b372a6995": {
-  "model": "simulated-heuristic-v1",
-  "provenance": "simulated",
+  "model": "claude-haiku-5-5",
+  "provenance": "live-model",
   "task": "map_record",
-  "text": "{\"category\": \"standard\", \"bed\": \"double\", \"view\": \"garden\", \"max_occupancy\": 2, \"meal_plan\": \"breakfast\", \"cancellation\": \"free_24h\", \"prepaid\": false, \"confidence\": 0.78}"
+  "text": "{\"category\":\"standard\",\"bed\":\"double\",\"view\":\"garden\",\"max_occupancy\":2,\"meal_plan\":\"breakfast\",\"cancellation\":\"free_24h\",\"prepaid\":false,\"confidence\":0.7}"
  },
  "e39c5dccbcfa0c6f17b5": {
-  "model": "simulated-heuristic-v1",
-  "provenance": "simulated",
+  "model": "claude-haiku-5-5",
+  "provenance": "live-model",
   "task": "classify_anomaly",
-  "text": "{\"class\": \"stale-availability\", \"confidence\": 0.95, \"rationale\": \"Record not updated within the freshness window.\", \"new_class\": null}"
+  "text": "{\"class\":\"stale-availability\",\"confidence\":0.97,\"rationale\":\"The detector rule is 'stale' and the evidence shows the record was last updated 19 days ago against a 7-day freshness limit, which matches the stale-availability definition of availability or rate not updated within the freshness window.\",\"new_class\":null}"
  },
  "eaa754dee8a744c853f3": {
-  "model": "simulated-heuristic-v1",
-  "provenance": "simulated",
+  "model": "claude-haiku-5-5",
+  "provenance": "live-model",
   "task": "map_record",
-  "text": "{\"category\": \"deluxe\", \"bed\": \"king\", \"view\": \"ocean\", \"max_occupancy\": 2, \"meal_plan\": \"breakfast\", \"cancellation\": \"free_48h\", \"prepaid\": false, \"confidence\": 0.98}"
+  "text": "{\"category\":\"deluxe\",\"bed\":\"king\",\"view\":\"ocean\",\"max_occupancy\":2,\"meal_plan\":\"breakfast\",\"cancellation\":\"free_48h\",\"prepaid\":false,\"confidence\":0.8}"
  },
  "f645dc1c7600e6e3a0fa": {
-  "model": "simulated-heuristic-v1",
-  "provenance": "simulated",
+  "model": "claude-haiku-5-5",
+  "provenance": "live-model",
   "task": "map_record",
-  "text": "{\"category\": \"family\", \"bed\": \"two_queens\", \"view\": \"garden\", \"max_occupancy\": 5, \"meal_plan\": \"half_board\", \"cancellation\": \"free_48h\", \"prepaid\": false, \"confidence\": 0.98}"
+  "text": "{\"category\":\"family\",\"bed\":\"two_queens\",\"view\":\"garden\",\"max_occupancy\":5,\"meal_plan\":\"half_board\",\"cancellation\":\"free_48h\",\"prepaid\":false,\"confidence\":0.9}"
  },
  "fead6e57ec683a5bd51e": {
-  "model": "simulated-heuristic-v1",
-  "provenance": "simulated",
+  "model": "claude-haiku-5-5",
+  "provenance": "live-model",
   "task": "map_record",
-  "text": "{\"category\": \"family\", \"bed\": \"unspecified\", \"view\": \"lake\", \"max_occupancy\": 5, \"meal_plan\": \"half_board\", \"cancellation\": \"free_48h\", \"prepaid\": false, \"confidence\": 0.91}"
+  "text": "{\"category\":\"family\",\"bed\":\"unspecified\",\"view\":\"lake\",\"max_occupancy\":5,\"meal_plan\":\"half_board\",\"cancellation\":\"free_48h\",\"prepaid\":false,\"confidence\":0.7}"
  }
 }

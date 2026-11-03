@@ -45,6 +45,9 @@ def search(conn, req: dict) -> dict:
                     why = f"open anomaly: {cls or 'unclassified'}"
                 elif a["status"] == "resolved" and cls in ontology.SUPPRESS_ON_RESOLVE:
                     why = f"suppressed: {cls}"
+                elif a["status"] == "resolved" and blocks:
+                    # Approving a proposed fix means the fix is in flight, not that the data is corrected.
+                    why = f"held pending hotel fix: {cls}"
         if why is None and r["avail"] < 1:
             why = "no availability"
         mp = effective_mapping(m) if m["status"] != "review" else None
