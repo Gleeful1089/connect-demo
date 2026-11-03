@@ -41,3 +41,19 @@ def test_evaluation_lives_on_its_own_tab():
     s2 = html[html.index('<div id="s2"'):]
     assert 'id="eval"' not in s1 and 'id="eval"' in s2
     assert "Workbench" in html and "Evaluation" in html
+
+
+def test_concurrent_requests_do_not_corrupt_the_shared_connection(tmp_path, monkeypatch):
+    """The browser fires several requests at once on page load; they share one SQLite connection."""
+    from concurrent.futures import ThreadPoolExecutor
+    import config
+    monkeypatch.setattr(config, "DB_PATH", tmp_path / "conc.db")
+    import api.main as main
+    main._conn = None
+    c = TestClient(main.app)
+    c.get("/api/meta")   # build the database once
+    paths = ["/api/queue", "/api/records", "/api/eval?threshold=0.85", "/api/audit", "/api/meta"] * 30
+    with ThreadPoolExecutor(max_workers=10) as ex:
+        codes = list(ex.map(lambda p: c.get(p).status_code, paths))
+    assert set(codes) == {200}, {x: codes.count(x) for x in set(codes)}
+    main._conn = None

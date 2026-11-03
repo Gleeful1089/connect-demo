@@ -82,3 +82,14 @@ unless an entry says otherwise, because no ANTHROPIC_API_KEY was available durin
 - **How detected:** the server was not answering /health 25 seconds after start.
 - **Correction:** auto mode now uses a recorded fixture when one exists and calls the API only on a fixture miss.
   Use `CONNECT_LLM=live` to force live calls.
+
+## 10. Page load could return a 500 and leave a panel blank (shared SQLite connection)
+- **What was wrong:** `GET /api/eval` intermittently returned 500 (`sqlite3.InterfaceError: bad parameter or other
+  API misuse`). The page fires queue, records, eval and audit requests at once, and the API shared one SQLite
+  connection across FastAPI's worker threads.
+- **How detected:** a Node smoke check of the UI after moving the evaluation to its own tab hit the 500, and the
+  server log showed the traceback. It had been happening since the first version; the earlier Node checks were
+  sequential and the 52 pytest cases never sent concurrent requests, so neither could see it. Whether it
+  affected your browser earlier is likely but unconfirmed.
+- **Correction:** wrote a concurrency test first (it failed 3 of 3 runs), then serialized API requests with a lock.
+  The test now passes 5 of 5 runs. Single-user demo only; a multi-user version needs a connection per request.

@@ -2,9 +2,10 @@
 from __future__ import annotations
 
 import json
+import threading
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -16,7 +17,21 @@ import pipeline
 from evaluation import heldout
 from triage import fixes, queue
 
-app = FastAPI(title="Connect demo", version="0.1")
+_db_lock = threading.Lock()
+
+
+def serialize_db():
+    """One SQLite connection is shared by all requests, so run API requests one at a time.
+    (A browser fires several requests at once on page load; concurrent use of one connection raises
+    sqlite3.InterfaceError.) Fine for a single-user demo."""
+    _db_lock.acquire()
+    try:
+        yield
+    finally:
+        _db_lock.release()
+
+
+app = FastAPI(title="Connect demo", version="0.1", dependencies=[Depends(serialize_db)])
 WEB = Path(__file__).resolve().parent.parent / "web"
 _conn = None
 
