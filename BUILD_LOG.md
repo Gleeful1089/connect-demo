@@ -1,8 +1,143 @@
 # BUILD_LOG
 
-Entries are appended as problems are found. Nothing here is cleaned up after the fact.
-All data is synthetic. Model outputs in this log come from the SIMULATED stand-in (scripts/simulated_model.py)
-unless an entry says otherwise, because no ANTHROPIC_API_KEY was available during the first build session.
+Entries are appended as they happen. Nothing here is cleaned up after the fact.
+All data is synthetic. This log has two parts. Part 1 is how the product direction evolved, from the starting brief to the
+current app, including every change of direction Chris made and, where he gave one, his reason. Part 2 is what went wrong
+technically. Items 1, 2 and 5 in Part 2 describe the first build, which ran on a simulated stand-in for the model; real
+model output was recorded later (see D4).
+
+# Part 1: Product direction
+
+## Starting point
+Chris brought a Head of Product case study memo and a build brief. The brief asked for a small demo of one claim:
+"AI handles messy supply data, and deterministic code handles money." It specified two screens (an onboarding workbench
+and a booking and statement flow), a build order (Screen 1 fully working and tested before Screen 2), a plan to be
+approved before any code, and process rules (keep this log, evaluate each model step against held-out data, label
+everything synthetic).
+
+## Decision log
+Each entry says what Chris decided, what prompted it, and what changed. Quotes are his words. Where he did not give a
+reason, the entry says so.
+
+**D1. Reuse patterns from an earlier project.** Chris asked to reuse some primitives (the approach to model API access,
+a git repo, possibly a Railway deployment). Changed: a single model entry point with model tiers named in one config
+file, with a cached-fixture fallback added so the demo runs offline; the deployment config shape. Patterns were copied,
+nothing was imported from the other project.
+
+**D2. Approved the plan.** I proposed a file layout and design decisions (fixture fallback, held-out labels read by one
+module only, no LLM in detection or money code) plus defaults for a fee floor and repo location. Chris replied "ok".
+He also approved installing Python 3.12 because the spec asked for 3.11+ and the machine had 3.9.
+
+**D3. Work unattended, record assumptions.** Chris stepped away and said: "make whatever assumptions you need to and
+record the questions/issues. use a pre-coded workflow/example feature if theres anything you cant build without my input
+or authorization." Changed: with no model access yet, I wrote a clearly labeled simulated stand-in and pre-coded
+fixtures; every assumption went into QUESTIONS.md (18 items); and I built Screen 2 without waiting for a second OK,
+because this instruction superseded the brief's "Screen 1 first, then wait".
+
+**D4. Record real model output.** Chris provided access and asked for the real recording. Findings with the real model:
+7 of 8 held-out records fully correct, with the same single miss as the simulated run (prepaid on a non-refundable
+rate); the model's confidence on every held-out record was 0.60 to 0.80, so the default 0.85 threshold auto-confirmed
+none of them. I left the default alone on purpose, since choosing it from 8 records would be fitting to the test set.
+Open question: what the default should be.
+
+**D5. Asked what a queue tile actually means.** Chris, looking at the first tile: "what was the raw data, what was the
+analysis (deterministic, rule-based, agentic), and how was the information in the tile populated? ... I don't know what
+DLX-KG-OV vs FAM-HB means, or the mechanism of how a room plan gets attached to a room". Finding: the tile mixed four
+kinds of content (a deterministic detector's evidence, a model's label and rationale, a fixed playbook lookup, and a
+priority formula) with nothing telling the reader which was which, and used vendor codes with no explanation. I explained
+it in conversation. No UI change was made at that point; the About tab guide (D14) is where this ended up.
+
+**D6. The workbench diagnoses but never repairs, so add a fix.** Chris asked what choosing a class in the dropdown
+accomplishes: "given the description of issue #1, we would want to attach the rate to the correct room. is it just meant
+to categorize the issue?" The honest answer was yes: approving recorded a decision and changed no data. His decisions:
+"yes, add that action" and "for fixes, write the data directly" (when I asked whether a fix should write the data or
+produce a change request for the hotel). Changed: a deterministic "Approve and apply fix" for rate-plan-on-wrong-room that
+moves the plan to its eligible room and sends the mapping back to the queue for confirmation, with before and after
+recorded in the audit trail and no model involved.
+
+**D7. Override should record disagreement, not demand a replacement.** Chris: "if the system detects an anomaly and I
+choose to override it, I just need to record what the initial triage said and that it was overridden." Changed: Override
+on an anomaly needs no class; the audit trail keeps the model's class and confidence plus the override. Mapping overrides
+still require at least one corrected field, since otherwise they do nothing.
+
+**D8. More fixes, and an undo.** Chris approved the first tile without seeing a fix option (I diagnosed a browser page
+loaded before the fix button existed) and asked me to undo that action and to add the duplicate and schema-drift fixes. Changed: those two fixes (suppress the copy; register the
+field alias); and an undo that appends a reversal row instead of deleting the original, because the audit trail is meant
+to be append-only. Applied fixes cannot be undone this way, since they changed data. Not every class has a fix: outliers,
+stale data and missing policies need the hotel.
+
+**D9. Remove Screen 2.** Chris: "delete anything about 'screen 2' from the app. I don't want to see it in the header
+navigation and don't need the functionality." No reason was given. Changed: the booking flow, the buyer-agent mock, the
+search, and the entire money module (fees, FX, ledger, virtual card) and their tests were deleted (recoverable from git).
+Consequence I flagged later: the demo now makes only the AI half of the original claim; "money stays deterministic" is
+stated in the memo but no longer demonstrated. Chris's response was "OK, great."
+
+**D10. The threshold slider had no visible effect.** Chris: "what is the purpose of the 'auto-confirm threshold'
+slider? I moved it around but didnt notice the impact." Finding: he had it at 0.40 and the model's lowest confidence
+was 0.60, so nothing could change below 0.60; the real effect sat between 0.70 and 0.90, shown only in a small gray
+counter, and nothing downstream consumed confirmed mappings after Screen 2 was removed. I offered three options
+(a better default start, linking the two sliders, a note such as "13 more records would need review at 0.80"). No option
+was chosen, so no change was made. Still open.
+
+**D11. Move the evaluation out of the main workflow.** Chris: "lets move the evaluation on the hold-out set to a second
+tab. this is more backend/design focus, not the actual UI that a user would interact with while using the system."
+Changed: Evaluation became its own tab, labeled as a design view, with a note that its slider changes no data.
+
+**D12. Confidence color must follow the slider.** Chris, in the browser: the last two issues "have model confidence .85
+and show up as green, but i set the auto-confirm threshold to .9 so they should be amber." This was the first time the
+UI was seen in a real browser; my own checks had only looked for crashes. Fixed (Part 2, item 11).
+
+**D13. Which part of the product is this a demo for?** Chris asked me to explain the scope. Answer: one module,
+AI-assisted supply onboarding (memo Section 2 hard problem 1 and Section 5 "AI leverage"), with explicit gaps (money, the
+compounding effect over many properties, buyers, activation). He accepted it, and the answer became the basis of the
+About tab.
+
+**D14. Host it with no logins and a personal sandbox for every visitor.** Chris: "I don't want to manage any logins or
+permissions; ideally when a new user starts the app for the first time it will automatically create synthetic data so
+they have a 'personal sandbox' that has all the functionality but won't alter any other user (or my) use of the app."
+Design that followed: a random cookie names a private database built from the recorded model outputs on first visit;
+no model calls and no API key on the server; "Reset my sandbox" resets only the caller; old sandboxes expire after 7 days
+and the total is capped at 300. Tests prove two visitors cannot affect each other, and a deliberate break (everyone
+sharing one id) made them fail. Chris's choices at the gates: a public GitHub repo (I had recommended private), a new
+separate Railway project, and rewriting git history before the first push so the commits carry a noreply identity and
+mention nothing private.
+
+**D15. Add context on the page.** Chris: "I think I should add a readme to the page so users have context", and he
+supplied the text, plus a quick guide to the actions. Changed: an About tab as the landing page with his text (adapted
+to read to HT readers rather than to him), a table explaining each action, and a note that the model output was
+recorded once and replayed.
+
+**D16. Remove the evaluation entirely.** After asking me to explain it again (what it measures and what it is for),
+Chris: "I think the evaluation concept in general is too complicated. lets' remove it from the app and from the about."
+He asked for two sentences in the About tab on how precision and recall were assessed during development and that the
+threshold can be raised or lowered. Changed: the Evaluation tab and its API route are gone; the two sentences were
+added. I kept the scoring code as a development script (`make evaluate`) so the claim stays reproducible; deleting it is
+his call.
+
+**D17. Put the product decisions in this log.** Chris noticed the log held only technical bugs and asked for the product
+direction too. That is this section.
+
+## The pattern in the removals and moves
+For the evaluation, Chris stated his test himself: whether something is part of "the actual UI that a user would interact
+with while using the system" (D11), and later whether it is too complicated for that audience (D16). Screen 2 was
+removed with no reason given (D9), so I make no claim about why. In the other direction, the fix actions (D6, D8) and the
+simpler override (D7) came from Chris trying the workbench as a reviewer and asking what each control actually did.
+Three of his corrections (D10, D12 and the missing fix button in D8) were things my automated checks could not see,
+because they only looked for crashes and correct data, not for whether a control was understandable or correctly
+colored.
+
+## Brief versus current app
+| In the brief | In the current app |
+|---|---|
+| Screen 1: synthetic data in two formats, adversarial rows, 8 held-out records | Kept as specified |
+| Canonical ontology; model mapping with confidence; threshold auto-confirm and review queue | Kept as specified |
+| Rule-based anomaly detection with no model; model classification into the taxonomy; new classes need approval | Kept as specified |
+| Triage queue with playbook fixes, human approve or override, audit table | Kept; override changed to need no class (D7) |
+| Evaluation panel with threshold slider | Built, moved to its own tab (D11), then removed from the app (D16); kept as a development script |
+| Screen 2: buyer agent, deterministic search, itemized price, fees, statements | Built, then removed (D9) |
+| Not in the brief | Deterministic apply-fix actions for three classes (D6, D8); undo (D8); per-visitor sandboxes and hosting (D14); About tab and guide (D15) |
+
+# Part 2: What went wrong
 
 ## 1. Rate outlier classified as parity break (detector bug)
 - **What was wrong:** R06 (a $1,150 non-refundable suite rate, 2.6x its public rate) was not flagged by the IQR rule.
