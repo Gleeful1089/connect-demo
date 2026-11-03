@@ -1,7 +1,8 @@
 """Single entry point for model calls, with a cached-fixture fallback so the demo runs offline.
 
 Modes (env CONNECT_LLM): auto (default) | offline | live | record
-  auto    : live if ANTHROPIC_API_KEY is set, else fixtures. A live failure falls back to fixtures.
+  auto    : recorded fixture if one exists, otherwise live if ANTHROPIC_API_KEY is set. Reproducible and free
+            once recorded. A live failure falls back to fixtures.
   offline : fixtures only.
   live    : live only.
   record  : live, and write each response to fixtures/calls.json.
@@ -52,10 +53,7 @@ def save_fixture(task: str, prompt: str, text: str, model: str, provenance: str)
 
 
 def _mode() -> str:
-    mode = os.environ.get("CONNECT_LLM", "auto")
-    if mode == "auto":
-        return "live" if os.environ.get("ANTHROPIC_API_KEY") else "offline"
-    return mode
+    return os.environ.get("CONNECT_LLM", "auto")
 
 
 def _live(task: str, prompt: str, system: str | None, tier: str, max_tokens: int) -> LLMResult:
@@ -88,6 +86,12 @@ def complete(task: str, prompt: str, system: str | None = None, tier: str = "fas
     mode = _mode()
     if mode == "offline":
         return _fixture(task, prompt)
+    if mode == "auto":
+        try:
+            return _fixture(task, prompt)
+        except FixtureMissing:
+            if not os.environ.get("ANTHROPIC_API_KEY"):
+                raise
     try:
         res = _live(task, prompt, system, tier, max_tokens)
     except Exception:

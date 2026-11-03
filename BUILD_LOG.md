@@ -75,3 +75,10 @@ unless an entry says otherwise, because no ANTHROPIC_API_KEY was available durin
 - **Cause:** approving a proposed fix records a decision. It does not correct the data at the hotel.
 - **Correction:** records with a blocking anomaly stay out of search after approval ("held pending hotel fix")
   until the data is re-ingested. A regression test covers it.
+
+## 9. `make run` with a key set made 28 live calls on every database rebuild
+- **What was wrong:** in auto mode a present API key meant "go live", so the first `make run` after recording sat
+  for 30+ seconds re-calling the model and would have produced outputs that differ from the recorded fixtures.
+- **How detected:** the server was not answering /health 25 seconds after start.
+- **Correction:** auto mode now uses a recorded fixture when one exists and calls the API only on a fixture miss.
+  Use `CONNECT_LLM=live` to force live calls.
