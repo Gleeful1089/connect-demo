@@ -96,8 +96,9 @@ async function renderRecords() {
   const rows = await api('/api/records');
   const counts = rows.reduce((a, r) => { a[r.status] = (a[r.status] || 0) + 1; return a; }, {});
   $('counts').textContent = Object.entries(counts).map(([k, v]) => `${v} ${k.replace('_', '-')}`).join(', ');
-  $('records').innerHTML = `<tr><th>ID</th><th>Hotel</th><th>Fmt</th><th>Room (raw)</th><th>Plan (raw)</th><th class="n">Rate</th><th>Mapping</th><th class="n">Conf</th><th>Open anomalies</th></tr>` +
+  $('records').innerHTML = `<tr><th>ID</th><th>Hotel</th><th>Fmt</th><th>Room (raw)</th><th>Plan (raw)</th><th class="n">Rate</th>${FIELDS.map((f) => `<th>${f.replace('_', ' ')}</th>`).join('')}<th>Mapping</th><th class="n">Conf</th><th>Open anomalies</th></tr>` +
     rows.map((r) => `<tr><td>${r.id}</td><td>${esc(r.hotel)}</td><td>${r.format}</td><td>${esc(r.room)}</td><td>${esc(r.plan)}</td><td class="n">${(r.rate_cents / 100).toFixed(2)} ${esc(r.currency)}</td>
+      ${FIELDS.map((f) => { const m = r.final || r.proposed; return `<td title="${r.final ? 'human-confirmed' : 'model proposal'}">${esc(String(m[f] ?? '—'))}</td>`; }).join('')}
       <td><span class="pill ${r.status === 'review' ? 'warn' : 'ok'}">${r.status.replace('_', '-')}</span></td><td class="n">${(+r.confidence).toFixed(2)}</td>
       <td>${r.anomalies.map((a) => `<span class="pill bad">${esc(a)}</span>`).join(' ')}</td></tr>`).join('');
 }
